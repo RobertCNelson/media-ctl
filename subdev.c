@@ -41,7 +41,7 @@ static int v4l2_subdev_open(struct media_entity *entity)
 	if (entity->fd == -1) {
 		printf("%s: Failed to open subdev device node %s\n", __func__,
 			entity->devname);
-		return errno;
+		return -errno;
 	}
 
 	return 0;
@@ -64,7 +64,7 @@ int v4l2_subdev_get_format(struct media_entity *entity,
 
 	ret = ioctl(entity->fd, VIDIOC_SUBDEV_G_FMT, &fmt);
 	if (ret < 0)
-		return errno;
+		return -errno;
 
 	*format = fmt.format;
 	return 0;
@@ -88,7 +88,7 @@ int v4l2_subdev_set_format(struct media_entity *entity,
 
 	ret = ioctl(entity->fd, VIDIOC_SUBDEV_S_FMT, &fmt);
 	if (ret < 0)
-		return errno;
+		return -errno;
 
 	*format = fmt.format;
 	return 0;
