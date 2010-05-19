@@ -223,6 +223,7 @@ static int parse_format(struct v4l2_mbus_framefmt *format, const char *p, char *
 	height = strtoul(p, &end, 10);
 	*endp = end;
 
+	memset(format, 0, sizeof(*format));
 	format->width = width;
 	format->height = height;
 	format->code = mbus_formats[i].code;
