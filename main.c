@@ -300,7 +300,7 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 		return ret;
 
 	/* If the pad is an output pad, automatically set the same format on
-	 * the remote inputs, if any.
+	 * the remote subdev input pads, if any.
 	 */
 	if (pad->type == MEDIA_PAD_TYPE_OUTPUT) {
 		for (i = 0; i < pad->entity->info.links; ++i) {
@@ -310,7 +310,8 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 			if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
 				continue;
 
-			if (link->source == pad) {
+			if (link->source == pad &&
+			    link->sink->entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV) {
 				remote_format = format;
 				set_format(link->sink, &remote_format);
 			}
