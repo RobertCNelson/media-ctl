@@ -363,8 +363,8 @@ int main(int argc, char **argv)
 			printf("Entity '%s' not found\n", media_opts.entity);
 	}
 
-	if (media_opts.print) {
-		media_print_topology(media);
+	if (media_opts.print || media_opts.print_dot) {
+		media_print_topology(media, media_opts.print_dot);
 		printf("\n");
 	}
 

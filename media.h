@@ -56,7 +56,7 @@ struct media_entity_pad *media_entity_remote_pad(struct media_entity_pad *pad);
 
 struct media_entity *media_get_entity_by_name(struct media_device *media,
 	const char *name, size_t length);
-void media_print_topology(struct media_device *media);
+void media_print_topology(struct media_device *media, int dot);
 int media_setup_link(struct media_device *media,
 	struct media_entity_pad *source, struct media_entity_pad *sink,
 	__u32 flags);

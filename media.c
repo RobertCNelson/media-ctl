@@ -201,7 +201,78 @@ int media_reset_links(struct media_device *media)
 	return 0;
 }
 
-void media_print_topology(struct media_device *media)
+static void media_print_topology_dot(struct media_device *media)
+{
+	unsigned int i, j;
+
+	printf("digraph board {\n");
+	printf("\trankdir=TB\n");
+
+	for (i = 0; i < media->entities_count; ++i) {
+		struct media_entity *entity = &media->entities[i];
+		unsigned int npads;
+
+		switch (entity->info.type) {
+		case MEDIA_ENTITY_TYPE_NODE:
+			printf("\tn%08x [label=\"%s\", shape=box, style=filled, "
+			       "fillcolor=yellow]\n",
+			       entity->info.id, entity->info.name);
+			break;
+
+		case MEDIA_ENTITY_TYPE_SUBDEV:
+			printf("\tn%08x [label=\"{{", entity->info.id);
+
+			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
+				if (entity->pads[j].type != MEDIA_PAD_TYPE_INPUT)
+					continue;
+
+				printf("%s<port%u> %u", npads ? " | " : "", j, j);
+				npads++;
+			}
+
+			printf("} | %s | {", entity->info.name);
+
+			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
+				if (entity->pads[j].type != MEDIA_PAD_TYPE_OUTPUT)
+					continue;
+
+				printf("%s<port%u> %u", npads ? " | " : "", j, j);
+				npads++;
+			}
+
+			printf("}}\", shape=Mrecord, style=filled, fillcolor=green]\n");
+			break;
+
+		default:
+			continue;
+		}
+
+		for (j = 0; j < entity->info.links; j++) {
+			struct media_entity_link *link = &entity->links[j];
+
+			if (link->source->entity != entity)
+				continue;
+
+			printf("\tn%08x", link->source->entity->info.id);
+			if (link->source->entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV)
+				printf(":port%u", link->source->index);
+			printf(" -> ");
+			printf("n%08x", link->sink->entity->info.id);
+			if (link->sink->entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV)
+				printf(":port%u", link->sink->index);
+
+			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
+				printf(" [style=bold]");
+			else if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
+				printf(" [style=dashed]");
+			printf("\n");
+		}
+	}
+
+	printf("}\n");
+}
+
+static void media_print_topology_text(struct media_device *media)
 {
 	unsigned int i, j, k;
 	unsigned int padding;
@@ -242,6 +313,14 @@ void media_print_topology(struct media_device *media)
 		}
 		printf("\n");
 	}
+}
+
+void media_print_topology(struct media_device *media, int dot)
+{
+	if (dot)
+		media_print_topology_dot(media);
+	else
+		media_print_topology_text(media);
 }
 
 static int media_enum_links(struct media_device *media)

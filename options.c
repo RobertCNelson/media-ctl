@@ -40,9 +40,12 @@ static void usage(const char *argv0)
 	printf("-i, --interactive	Modify links interactively\n");
 	printf("-l, --links		Comma-separated list of links descriptors to setup\n");
 	printf("-p, --print-topology	Print the device topology (implies -v)\n");
+	printf("    --print-dot		Print the device topology as a dot graph (implies -v)\n");
 	printf("-r, --reset		Reset all links to inactive\n");
 	printf("-v, --verbose		Be verbose\n");
 }
+
+#define OPT_PRINT_DOT	256
 
 static struct option opts[] = {
 	{"device", 1, 0, 'd'},
@@ -51,6 +54,7 @@ static struct option opts[] = {
 	{"help", 0, 0, 'h'},
 	{"interactive", 0, 0, 'i'},
 	{"links", 1, 0, 'l'},
+	{"print-dot", 0, 0, OPT_PRINT_DOT},
 	{"print-topology", 0, 0, 'p'},
 	{"reset", 0, 0, 'r'},
 	{"verbose", 0, 0, 'v'},
@@ -103,6 +107,10 @@ int parse_cmdline(int argc, char **argv)
 
 		case 'v':
 			media_opts.verbose = 1;
+			break;
+
+		case OPT_PRINT_DOT:
+			media_opts.print_dot = 1;
 			break;
 
 		default:
