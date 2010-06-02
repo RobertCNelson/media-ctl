@@ -32,6 +32,7 @@
 #include <linux/media.h>
 
 #include "media.h"
+#include "subdev.h"
 #include "tools.h"
 
 static const char *media_entity_type_to_string(unsigned type)
@@ -83,6 +84,26 @@ static const char *media_entity_subtype_to_string(unsigned type, unsigned subtyp
 	default:
 		return node_types[0];
 	}
+}
+
+static const char *media_pad_type_to_string(unsigned type)
+{
+	static const struct {
+		__u32 type;
+		const char *name;
+	} types[] = {
+		{ MEDIA_PAD_TYPE_INPUT, "Input" },
+		{ MEDIA_PAD_TYPE_OUTPUT, "Output" },
+	};
+
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(types); i++) {
+		if (types[i].type == type)
+			return types[i].name;
+	}
+
+	return "Unknown";
 }
 
 /*
@@ -276,6 +297,7 @@ static void media_print_topology_text(struct media_device *media)
 {
 	unsigned int i, j, k;
 	unsigned int padding;
+	int ret;
 
 	printf("Device topology\n");
 
@@ -293,6 +315,21 @@ static void media_print_topology_text(struct media_device *media)
 			printf("%*cdevice node name %s\n", padding, ' ', entity->devname);
 
 		for (j = 0; j < entity->info.pads; j++) {
+			struct media_entity_pad *pad = &entity->pads[j];
+			struct v4l2_mbus_framefmt format;
+
+			printf("\tpad%u: %s", j, media_pad_type_to_string(pad->type));
+
+			if (entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV) {
+				ret = v4l2_subdev_get_format(entity, &format, j,
+						     V4L2_SUBDEV_FORMAT_ACTIVE);
+				if (ret == 0)
+					printf(" [%s %ux%u]", pixelcode_to_string(format.code),
+					       format.width, format.height);
+			}
+
+			printf("\n");
+
 			for (k = 0; k < entity->info.links; k++) {
 				struct media_entity_link *link = &entity->links[k];
 
@@ -300,7 +337,7 @@ static void media_print_topology_text(struct media_device *media)
 				    link->source->index != j)
 					continue;
 
-				printf("\tpad%u -> '%s':pad%u [", link->source->index,
+				printf("\t\t-> '%s':pad%u [",
 					link->sink->entity->info.name, link->sink->index);
 
 				if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)

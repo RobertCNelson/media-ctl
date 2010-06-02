@@ -39,7 +39,6 @@
 #include "media.h"
 #include "options.h"
 #include "subdev.h"
-#include "tools.h"
 
 /* -----------------------------------------------------------------------------
  * Links setup
@@ -175,43 +174,17 @@ static int setup_links(struct media_device *media, const char *p)
  * Formats setup
  */
 
-static struct {
-	const char *name;
-	enum v4l2_mbus_pixelcode code;
-} mbus_formats[] = {
-	{ "YUYV", V4L2_MBUS_FMT_YUYV16_1X16 },
-	{ "UYVY", V4L2_MBUS_FMT_UYVY16_1X16 },
-	{ "SGRBG10", V4L2_MBUS_FMT_SGRBG10_1X10 },
-	{ "SGRBG10_DPCM8", V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 },
-};
-
-static const char *pixelcode_to_string(enum v4l2_mbus_pixelcode code)
-{
-	unsigned int i;
-
-	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
-		if (mbus_formats[i].code == code)
-			return mbus_formats[i].name;
-	}
-
-	return "unknown";
-}
-
 static int parse_format(struct v4l2_mbus_framefmt *format, const char *p, char **endp)
 {
+	enum v4l2_mbus_pixelcode code;
 	unsigned int width, height;
-	unsigned int i;
 	char *end;
 
 	for (; isspace(*p); ++p);
 	for (end = (char *)p; !isspace(*end) && *end != '\0'; ++end);
 
-	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
-		if (strncmp(mbus_formats[i].name, p, end - p) == 0)
-			break;
-	}
-
-	if (i == ARRAY_SIZE(mbus_formats))
+	code = string_to_pixelcode(p, end - p);
+	if (code == (enum v4l2_mbus_pixelcode)-1)
 		return -EINVAL;
 
 	for (p = end; isspace(*p); ++p);
@@ -226,7 +199,7 @@ static int parse_format(struct v4l2_mbus_framefmt *format, const char *p, char *
 	memset(format, 0, sizeof(*format));
 	format->width = width;
 	format->height = height;
-	format->code = mbus_formats[i].code;
+	format->code = code;
 
 	return 0;
 }

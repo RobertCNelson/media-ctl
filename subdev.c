@@ -31,6 +31,45 @@
 
 #include "media.h"
 #include "subdev.h"
+#include "tools.h"
+
+static struct {
+	const char *name;
+	enum v4l2_mbus_pixelcode code;
+} mbus_formats[] = {
+	{ "YUYV", V4L2_MBUS_FMT_YUYV16_1X16 },
+	{ "UYVY", V4L2_MBUS_FMT_UYVY16_1X16 },
+	{ "SGRBG10", V4L2_MBUS_FMT_SGRBG10_1X10 },
+	{ "SGRBG10_DPCM8", V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 },
+};
+
+const char *pixelcode_to_string(enum v4l2_mbus_pixelcode code)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
+		if (mbus_formats[i].code == code)
+			return mbus_formats[i].name;
+	}
+
+	return "unknown";
+}
+
+enum v4l2_mbus_pixelcode string_to_pixelcode(const char *string,
+					     unsigned int length)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
+		if (strncmp(mbus_formats[i].name, string, length) == 0)
+			break;
+	}
+
+	if (i == ARRAY_SIZE(mbus_formats))
+		return (enum v4l2_mbus_pixelcode)-1;
+
+	return mbus_formats[i].code;
+}
 
 static int v4l2_subdev_open(struct media_entity *entity)
 {
