@@ -86,7 +86,7 @@ int parse_cmdline(int argc, char **argv)
 
 		case 'h':
 			usage(argv[0]);
-			return 1;
+			exit(0);
 
 		case 'i':
 			media_opts.interactive = 1;
