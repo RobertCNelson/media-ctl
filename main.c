@@ -244,7 +244,7 @@ static int set_format(struct media_entity_pad *pad, struct v4l2_mbus_framefmt *f
 	ret = v4l2_subdev_set_format(pad->entity, format, pad->index,
 				     V4L2_SUBDEV_FORMAT_ACTIVE);
 	if (ret < 0) {
-		printf("Unable to set format: %s(%u)", strerror(ret), ret);
+		printf("Unable to set format: %s (%d)\n", strerror(-ret), ret);
 		return ret;
 	}
 

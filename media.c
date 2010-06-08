@@ -503,7 +503,7 @@ struct media_device *media_open(const char *name, int verbose)
 	ret = media_enum_entities(media);
 	if (ret < 0) {
 		printf("%s: Unable to enumerate entities for device %s (%s)\n",
-			__func__, name, strerror(ret));
+			__func__, name, strerror(-ret));
 		media_close(media);
 		return NULL;
 	}
