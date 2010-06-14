@@ -63,11 +63,10 @@ static struct media_entity_pad *parse_pad(struct media_device *media, const char
 
 		for (++end; isspace(*end); ++end);
 	} else {
-		entity_id = strtoul(p, &end, 10) - 1;
-		if (entity_id >= media->entities_count)
+		entity_id = strtoul(p, &end, 10);
+		entity = media_get_entity_by_id(media, entity_id);
+		if (entity == NULL)
 			return NULL;
-
-		entity = &media->entities[entity_id];
 	}
 
 	if (*end != ':')

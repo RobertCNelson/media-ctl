@@ -130,7 +130,7 @@ struct media_entity_pad *media_entity_remote_pad(struct media_entity_pad *pad)
 }
 
 /*
- * media_entity_by_name -
+ * media_get_entity_by_name -
  */
 struct media_entity *media_get_entity_by_name(struct media_device *media,
 					      const char *name, size_t length)
@@ -141,6 +141,24 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
 		struct media_entity *entity = &media->entities[i];
 
 		if (strncmp(entity->info.name, name, length) == 0)
+			return entity;
+	}
+
+	return NULL;
+}
+
+/*
+ * media_get_entity_by_id -
+ */
+struct media_entity *media_get_entity_by_id(struct media_device *media,
+					    __u32 id)
+{
+	unsigned int i;
+
+	for (i = 0; i < media->entities_count; ++i) {
+		struct media_entity *entity = &media->entities[i];
+
+		if (entity->info.id == id)
 			return entity;
 	}
 
@@ -393,16 +411,16 @@ static int media_enum_links(struct media_device *media)
 			struct media_entity *source;
 			struct media_entity *sink;
 
-			if (link->source.entity > media->entities_count ||
-			    link->sink.entity > media->entities_count) {
+			source = media_get_entity_by_id(media, link->source.entity);
+			sink = media_get_entity_by_id(media, link->sink.entity);
+
+			if (source == NULL || sink == NULL) {
 				printf("WARNING entity %u link %u from %u/%u to %u/%u is invalid!\n",
 					id, i, link->source.entity, link->source.index,
 					link->sink.entity, link->sink.index);
 				ret = -EINVAL;
 			}
 
-			source = &media->entities[link->source.entity - 1];
-			sink = &media->entities[link->sink.entity - 1];
 			entity->links[i].source = &source->pads[link->source.index];
 			entity->links[i].sink = &sink->pads[link->sink.index];
 			entity->links[i].flags = links.links[i].flags;
@@ -420,17 +438,19 @@ static int media_enum_entities(struct media_device *media)
 	struct media_entity *entity;
 	struct stat devstat;
 	char devname[32];
+	unsigned int size;
 	unsigned int i;
 	__u32 id;
 	int ret;
 
-	for (id = 1; ; id++) {
-		media->entities =
-			realloc(media->entities, id * sizeof(*media->entities));
-		entity = &media->entities[id - 1];
+	for (id = 0; ; id = entity->info.id) {
+		size = (media->entities_count + 1) * sizeof(*media->entities);
+		media->entities = realloc(media->entities, size);
+
+		entity = &media->entities[media->entities_count];
 		memset(entity, 0, sizeof(*entity));
 		entity->fd = -1;
-		entity->info.id = id;
+		entity->info.id = id | MEDIA_ENTITY_ID_FLAG_NEXT;
 
 		ret = ioctl(media->fd, MEDIA_IOC_ENUM_ENTITIES, &entity->info);
 		if (ret < 0) {
@@ -468,6 +488,8 @@ static int media_enum_entities(struct media_device *media)
 				break;
 			}
 		}
+
+		id = entity->info.id;
 	}
 
 	return 0;
