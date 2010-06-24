@@ -61,13 +61,14 @@ static struct media_entity_pad *parse_pad(struct media_device *media, const char
 		if (entity == NULL)
 			return NULL;
 
-		for (++end; isspace(*end); ++end);
+		++end;
 	} else {
 		entity_id = strtoul(p, &end, 10);
 		entity = media_get_entity_by_id(media, entity_id);
 		if (entity == NULL)
 			return NULL;
 	}
+	for (; isspace(*end); ++end);
 
 	if (*end != ':')
 		return NULL;
