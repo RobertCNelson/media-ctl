@@ -133,3 +133,48 @@ int v4l2_subdev_set_format(struct media_entity *entity,
 	return 0;
 }
 
+int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
+			 unsigned int pad, enum v4l2_subdev_format which)
+{
+	struct v4l2_subdev_pad_crop crop;
+	int ret;
+
+	ret = v4l2_subdev_open(entity);
+	if (ret < 0)
+		return ret;
+
+	memset(&crop, 0, sizeof(crop));
+	crop.pad = pad;
+	crop.which = which;
+
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_G_CROP, &crop);
+	if (ret < 0)
+		return -errno;
+
+	*rect = crop.rect;
+	return 0;
+}
+
+int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
+			 unsigned int pad, enum v4l2_subdev_format which)
+{
+	struct v4l2_subdev_pad_crop crop;
+	int ret;
+
+	ret = v4l2_subdev_open(entity);
+	if (ret < 0)
+		return ret;
+
+	memset(&crop, 0, sizeof(crop));
+	crop.pad = pad;
+	crop.which = which;
+	crop.rect = *rect;
+
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_S_CROP, &crop);
+	if (ret < 0)
+		return -errno;
+
+	*rect = crop.rect;
+	return 0;
+}
+

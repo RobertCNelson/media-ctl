@@ -203,8 +203,36 @@ static int parse_format(struct v4l2_mbus_framefmt *format, const char *p, char *
 	return 0;
 }
 
+static int parse_crop(struct v4l2_rect *crop, const char *p, char **endp)
+{
+	char *end;
+
+	for (; isspace(*p); ++p);
+
+	crop->left = strtoul(p, &end, 10);
+	if (*end != ',')
+		return -EINVAL;
+
+	p = end + 1;
+	crop->top = strtoul(p, &end, 10);
+	if (*end != '/')
+		return -EINVAL;
+
+	p = end + 1;
+	crop->width = strtoul(p, &end, 10);
+	if (*end != 'x')
+		return -EINVAL;
+
+	p = end + 1;
+	crop->height = strtoul(p, &end, 10);
+	*endp = end;
+
+	return 0;
+}
+
 static struct media_entity_pad *parse_pad_format(struct media_device *media,
-	struct v4l2_mbus_framefmt *format, const char *p, char **endp)
+	struct v4l2_mbus_framefmt *format, struct v4l2_rect *crop,
+	const char *p, char **endp)
 {
 	struct media_entity_pad *pad;
 	char *end;
@@ -225,10 +253,18 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 		return NULL;
 
 	for (p = end; isspace(*p); p++);
-	if (*p++ != ']')
+	if (*p != ']') {
+		ret = parse_crop(crop, p, &end);
+		if (ret < 0)
+			return NULL;
+
+		for (p = end; isspace(*p); p++);
+	}
+
+	if (*p != ']')
 		return NULL;
 
-	*endp = (char *)p;
+	*endp = (char *)p + 1;
 	return pad;
 }
 
@@ -253,23 +289,55 @@ static int set_format(struct media_entity_pad *pad, struct v4l2_mbus_framefmt *f
 	return 0;
 }
 
+static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
+{
+	int ret;
+
+	printf("Setting up crop rectangle %u,%u/%ux%u on pad %s/%u\n",
+		crop->left, crop->top, crop->width, crop->height,
+		pad->entity->info.name, pad->index);
+
+	ret = v4l2_subdev_set_crop(pad->entity, crop, pad->index,
+				   V4L2_SUBDEV_FORMAT_ACTIVE);
+	if (ret < 0) {
+		printf("Unable to set crop rectangle: %s (%d)", strerror(-ret), ret);
+		return ret;
+	}
+
+	printf("Crop rectangle set: %u,%u/%ux%u\n",
+		crop->left, crop->top, crop->width, crop->height);
+
+	return 0;
+}
+
 static int setup_format(struct media_device *media, const char *p, char **endp)
 {
 	struct v4l2_mbus_framefmt format;
 	struct media_entity_pad *pad;
+	struct v4l2_rect crop = { -1, -1, -1, -1 };
 	unsigned int i;
 	char *end;
 	int ret;
 
-	pad = parse_pad_format(media, &format, p, &end);
+	pad = parse_pad_format(media, &format, &crop, p, &end);
 	if (pad == NULL) {
 		printf("Unable to parse format\n");
 		return -EINVAL;
 	}
 
 	ret = set_format(pad, &format);
-	if (ret < 0)
+	if (ret < 0) {
+		printf("Unable to set format\n");
 		return ret;
+	}
+
+	if (crop.left != -1 && crop.top != -1) {
+		ret = set_crop(pad, &crop);
+		if (ret < 0) {
+			printf("Unable to set crop rectangle\n");
+			return ret;
+		}
+	}
 
 	/* If the pad is an output pad, automatically set the same format on
 	 * the remote subdev input pads, if any.
@@ -301,10 +369,8 @@ static int setup_formats(struct media_device *media, const char *p)
 
 	do {
 		ret = setup_format(media, p, &end);
-		if (ret < 0) {
-			printf("Unable to parse format\n");
+		if (ret < 0)
 			return ret;
-		}
 
 		p = end + 1;
 	} while (*end == ',');

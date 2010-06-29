@@ -34,6 +34,10 @@ int v4l2_subdev_get_format(struct media_entity *entity,
 int v4l2_subdev_set_format(struct media_entity *entity,
 	struct v4l2_mbus_framefmt *format, unsigned int pad,
 	enum v4l2_subdev_format which);
+int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
+	unsigned int pad, enum v4l2_subdev_format which);
+int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
+	unsigned int pad, enum v4l2_subdev_format which);
 
 #endif
 

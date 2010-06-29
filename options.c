@@ -30,19 +30,39 @@ struct media_options media_opts = {
 	.devname = MEDIA_DEVNAME_DEFAULT,
 };
 
-static void usage(const char *argv0)
+static void usage(const char *argv0, int verbose)
 {
 	printf("%s [options] device\n", argv0);
 	printf("-d, --device dev	Media device name (default: %s)\n", MEDIA_DEVNAME_DEFAULT);
 	printf("-e, --entity name	Print the device name associated with the given entity\n");
 	printf("-f, --formats		Comma-separated list of formats to setup\n");
-	printf("-h, --help		Show this help screen\n");
+	printf("-h, --help		Show verbose help and exit\n");
 	printf("-i, --interactive	Modify links interactively\n");
 	printf("-l, --links		Comma-separated list of links descriptors to setup\n");
 	printf("-p, --print-topology	Print the device topology (implies -v)\n");
 	printf("    --print-dot		Print the device topology as a dot graph (implies -v)\n");
 	printf("-r, --reset		Reset all links to inactive\n");
 	printf("-v, --verbose		Be verbose\n");
+
+	if (!verbose)
+		return;
+
+	printf("\n");
+	printf("Links and formats are defined as\n");
+	printf("\tlink            = pad, '->', pad, '[', flags, ']' ;\n");
+	printf("\tformat          = pad, '[', fcc, ' ', size, [ ' ', crop ], ']' ;\n");
+	printf("\tpad             = entity, ':', pad number ;\n");
+	printf("\tentity          = entity number | ( '\"', entity name, '\"' ) ;\n");
+	printf("\tsize            = width, 'x', height ;\n");
+	printf("\tcrop            = left, ',', top, '/', size ;\n");
+	printf("where the fields are\n");
+	printf("\tentity number   Entity numeric identifier\n");
+	printf("\tentity name     Entify name (string) \n");
+	printf("\tpad number      Pad numeric identifier\n");
+	printf("\tflags           Link flags (0: inactive, 1: active)\n");
+	printf("\tfcc             Format FourCC\n");
+	printf("\twidth           Image width in pixels\n");
+	printf("\theight          Image height in pixels\n");
 }
 
 #define OPT_PRINT_DOT	256
@@ -65,7 +85,7 @@ int parse_cmdline(int argc, char **argv)
 	int opt;
 
 	if (argc == 1) {
-		usage(argv[0]);
+		usage(argv[0], 0);
 		return 1;
 	}
 
@@ -85,7 +105,7 @@ int parse_cmdline(int argc, char **argv)
 			break;
 
 		case 'h':
-			usage(argv[0]);
+			usage(argv[0], 1);
 			exit(0);
 
 		case 'i':
