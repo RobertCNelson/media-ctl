@@ -230,9 +230,28 @@ static int parse_crop(struct v4l2_rect *crop, const char *p, char **endp)
 	return 0;
 }
 
+static int parse_frame_interval(struct v4l2_fract *interval, const char *p, char **endp)
+{
+	char *end;
+
+	for (; isspace(*p); ++p);
+
+	interval->numerator = strtoul(p, &end, 10);
+
+	for (p = end; isspace(*p); ++p);
+	if (*p++ != '/')
+		return -EINVAL;
+
+	for (; isspace(*p); ++p);
+	interval->denominator = strtoul(p, &end, 10);
+
+	*endp = end;
+	return 0;
+}
+
 static struct media_entity_pad *parse_pad_format(struct media_device *media,
 	struct v4l2_mbus_framefmt *format, struct v4l2_rect *crop,
-	const char *p, char **endp)
+	struct v4l2_fract *interval, const char *p, char **endp)
 {
 	struct media_entity_pad *pad;
 	char *end;
@@ -253,8 +272,16 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 		return NULL;
 
 	for (p = end; isspace(*p); p++);
-	if (*p != ']') {
+	if (isdigit(*p)) {
 		ret = parse_crop(crop, p, &end);
+		if (ret < 0)
+			return NULL;
+
+		for (p = end; isspace(*p); p++);
+	}
+
+	if (*p == '@') {
+		ret = parse_frame_interval(interval, ++p, &end);
 		if (ret < 0)
 			return NULL;
 
@@ -310,16 +337,37 @@ static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
 	return 0;
 }
 
+static int set_frame_interval(struct media_entity *entity, struct v4l2_fract *interval)
+{
+	int ret;
+
+	printf("Setting up frame interval %u/%u on entity %s\n",
+		interval->numerator, interval->denominator, entity->info.name);
+
+	ret = v4l2_subdev_set_frame_interval(entity, interval);
+	if (ret < 0) {
+		printf("Unable to set frame interval: %s (%d)", strerror(-ret), ret);
+		return ret;
+	}
+
+	printf("Frame interval set: %u/%u\n",
+		interval->numerator, interval->denominator);
+
+	return 0;
+}
+
+
 static int setup_format(struct media_device *media, const char *p, char **endp)
 {
 	struct v4l2_mbus_framefmt format;
 	struct media_entity_pad *pad;
 	struct v4l2_rect crop = { -1, -1, -1, -1 };
+	struct v4l2_fract interval = { 0, 0 };
 	unsigned int i;
 	char *end;
 	int ret;
 
-	pad = parse_pad_format(media, &format, &crop, p, &end);
+	pad = parse_pad_format(media, &format, &crop, &interval, p, &end);
 	if (pad == NULL) {
 		printf("Unable to parse format\n");
 		return -EINVAL;
@@ -335,6 +383,14 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 		ret = set_crop(pad, &crop);
 		if (ret < 0) {
 			printf("Unable to set crop rectangle\n");
+			return ret;
+		}
+	}
+
+	if (interval.numerator != 0) {
+		ret = set_frame_interval(pad->entity, &interval);
+		if (ret < 0) {
+			printf("Unable to set frame interval\n");
 			return ret;
 		}
 	}

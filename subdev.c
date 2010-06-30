@@ -178,3 +178,23 @@ int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
 	return 0;
 }
 
+int v4l2_subdev_set_frame_interval(struct media_entity *entity,
+				   struct v4l2_fract *interval)
+{
+	struct v4l2_subdev_frame_interval ival;
+	int ret;
+
+	ret = v4l2_subdev_open(entity);
+	if (ret < 0)
+		return ret;
+
+	memset(&ival, 0, sizeof(ival));
+	ival.interval = *interval;
+
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_S_FRAME_INTERVAL, &ival);
+	if (ret < 0)
+		return -errno;
+
+	*interval = ival.interval;
+	return 0;
+}
