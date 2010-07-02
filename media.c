@@ -253,9 +253,9 @@ static void media_print_topology_dot(struct media_device *media)
 
 		switch (entity->info.type) {
 		case MEDIA_ENTITY_TYPE_NODE:
-			printf("\tn%08x [label=\"%s\", shape=box, style=filled, "
+			printf("\tn%08x [label=\"%s\\n%s\", shape=box, style=filled, "
 			       "fillcolor=yellow]\n",
-			       entity->info.id, entity->info.name);
+			       entity->info.id, entity->info.name, entity->devname);
 			break;
 
 		case MEDIA_ENTITY_TYPE_SUBDEV:
@@ -329,7 +329,7 @@ static void media_print_topology_text(struct media_device *media)
 		printf("%*ctype %s subtype %s\n", padding, ' ',
 			media_entity_type_to_string(entity->info.type),
 			media_entity_subtype_to_string(entity->info.type, entity->info.subtype));
-		if (entity->devname)
+		if (entity->devname[0])
 			printf("%*cdevice node name %s\n", padding, ' ', entity->devname);
 
 		for (j = 0; j < entity->info.pads; j++) {
