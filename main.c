@@ -321,6 +321,9 @@ static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
 {
 	int ret;
 
+	if (crop->left == -1 || crop->top == -1)
+		return 0;
+
 	printf("Setting up crop rectangle %u,%u/%ux%u on pad %s/%u\n",
 		crop->left, crop->top, crop->width, crop->height,
 		pad->entity->info.name, pad->index);
@@ -374,18 +377,20 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 		return -EINVAL;
 	}
 
-	ret = set_format(pad, &format);
-	if (ret < 0) {
-		printf("Unable to set format\n");
-		return ret;
+	if (pad->type == MEDIA_PAD_TYPE_OUTPUT) {
+		ret = set_crop(pad, &crop);
+		if (ret < 0)
+			return ret;
 	}
 
-	if (crop.left != -1 && crop.top != -1) {
+	ret = set_format(pad, &format);
+	if (ret < 0)
+		return ret;
+
+	if (pad->type == MEDIA_PAD_TYPE_INPUT) {
 		ret = set_crop(pad, &crop);
-		if (ret < 0) {
-			printf("Unable to set crop rectangle\n");
+		if (ret < 0)
 			return ret;
-		}
 	}
 
 	if (interval.numerator != 0) {
