@@ -35,7 +35,8 @@ static void usage(const char *argv0, int verbose)
 	printf("%s [options] device\n", argv0);
 	printf("-d, --device dev	Media device name (default: %s)\n", MEDIA_DEVNAME_DEFAULT);
 	printf("-e, --entity name	Print the device name associated with the given entity\n");
-	printf("-f, --formats		Comma-separated list of formats to setup\n");
+	printf("-f, --set-format	Comma-separated list of formats to setup\n");
+	printf("    --get-format pad	Print the active format on a given pad\n");
 	printf("-h, --help		Show verbose help and exit\n");
 	printf("-i, --interactive	Modify links interactively\n");
 	printf("-l, --links		Comma-separated list of links descriptors to setup\n");
@@ -68,12 +69,14 @@ static void usage(const char *argv0, int verbose)
 	printf("\tdenominator     Frame interval denominator\n");
 }
 
-#define OPT_PRINT_DOT	256
+#define OPT_PRINT_DOT		256
+#define OPT_GET_FORMAT		257
 
 static struct option opts[] = {
 	{"device", 1, 0, 'd'},
 	{"entity", 1, 0, 'e'},
-	{"formats", 1, 0, 'f'},
+	{"set-format", 1, 0, 'f'},
+	{"get-format", 1, 0, OPT_GET_FORMAT},
 	{"help", 0, 0, 'h'},
 	{"interactive", 0, 0, 'i'},
 	{"links", 1, 0, 'l'},
@@ -134,6 +137,10 @@ int parse_cmdline(int argc, char **argv)
 
 		case OPT_PRINT_DOT:
 			media_opts.print_dot = 1;
+			break;
+
+		case OPT_GET_FORMAT:
+			media_opts.pad = optarg;
 			break;
 
 		default:

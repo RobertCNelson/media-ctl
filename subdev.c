@@ -198,3 +198,25 @@ int v4l2_subdev_set_frame_interval(struct media_entity *entity,
 	*interval = ival.interval;
 	return 0;
 }
+
+void v4l2_subdev_print_format(struct media_entity *entity,
+	unsigned int pad, enum v4l2_subdev_format which)
+{
+	struct v4l2_mbus_framefmt format;
+	struct v4l2_rect rect;
+	int ret;
+
+	ret = v4l2_subdev_get_format(entity, &format, pad, which);
+	if (ret != 0)
+		return;
+
+	printf("[%s %ux%u", pixelcode_to_string(format.code),
+	       format.width, format.height);
+
+	ret = v4l2_subdev_get_crop(entity, &rect, pad, which);
+	if (ret == 0)
+		printf(" (%u,%u)/%ux%u", rect.left, rect.top,
+		       rect.width, rect.height);
+	printf("]");
+}
+

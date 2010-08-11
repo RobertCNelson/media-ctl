@@ -81,7 +81,8 @@ static struct media_entity_pad *parse_pad(struct media_device *media, const char
 		return NULL;
 
 	for (p = end; isspace(*p); ++p);
-	*endp = (char *)p;
+	if (endp)
+		*endp = (char *)p;
 
 	return &entity->pads[pad];
 }
@@ -443,6 +444,7 @@ static int setup_formats(struct media_device *media, const char *p)
 int main(int argc, char **argv)
 {
 	struct media_device *media;
+	int ret = -1;
 
 	if (parse_cmdline(argc, argv))
 		return EXIT_FAILURE;
@@ -457,10 +459,26 @@ int main(int argc, char **argv)
 
 		entity = media_get_entity_by_name(media, media_opts.entity,
 						  strlen(media_opts.entity));
-		if (entity != NULL)
-			printf("%s\n", entity->devname);
-		else
+		if (entity == NULL) {
 			printf("Entity '%s' not found\n", media_opts.entity);
+			goto out;
+		}
+
+		printf("%s\n", entity->devname);
+	}
+
+	if (media_opts.pad) {
+		struct media_entity_pad *pad;
+
+		pad = parse_pad(media, media_opts.pad, NULL);
+		if (pad == NULL) {
+			printf("Pad '%s' not found\n", media_opts.pad);
+			goto out;
+		}
+
+		v4l2_subdev_print_format(pad->entity, pad->index,
+					 V4L2_SUBDEV_FORMAT_ACTIVE);
+		printf("\n");
 	}
 
 	if (media_opts.print || media_opts.print_dot) {
@@ -495,10 +513,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	ret = 0;
+
 out:
 	if (media)
 		media_close(media);
 
-	exit(EXIT_SUCCESS);
+	return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 

@@ -315,7 +315,6 @@ static void media_print_topology_text(struct media_device *media)
 {
 	unsigned int i, j, k;
 	unsigned int padding;
-	int ret;
 
 	printf("Device topology\n");
 
@@ -334,26 +333,11 @@ static void media_print_topology_text(struct media_device *media)
 
 		for (j = 0; j < entity->info.pads; j++) {
 			struct media_entity_pad *pad = &entity->pads[j];
-			struct v4l2_mbus_framefmt format;
-			struct v4l2_rect rect;
 
-			printf("\tpad%u: %s", j, media_pad_type_to_string(pad->type));
+			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->type));
 
-			if (entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV) {
-				ret = v4l2_subdev_get_format(entity, &format, j,
-						     V4L2_SUBDEV_FORMAT_ACTIVE);
-				if (ret == 0) {
-					printf(" [%s %ux%u", pixelcode_to_string(format.code),
-					       format.width, format.height);
-
-					ret = v4l2_subdev_get_crop(entity, &rect, j,
-							     V4L2_SUBDEV_FORMAT_ACTIVE);
-					if (ret == 0)
-						printf(" (%u,%u)/%ux%u", rect.left, rect.top,
-						       rect.width, rect.height);
-					printf("]");
-				}
-			}
+			if (entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV)
+				v4l2_subdev_print_format(entity, j, V4L2_SUBDEV_FORMAT_ACTIVE);
 
 			printf("\n");
 
