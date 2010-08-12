@@ -272,11 +272,14 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 	if (*p++ != '[')
 		return NULL;
 
-	ret = parse_format(format, p, &end);
-	if (ret < 0)
-		return NULL;
+	if (isalnum(*p)) {
+		ret = parse_format(format, p, &end);
+		if (ret < 0)
+			return NULL;
 
-	for (p = end; isspace(*p); p++);
+		for (p = end; isspace(*p); p++);
+	}
+
 	if (*p == '(') {
 		ret = parse_crop(crop, p, &end);
 		if (ret < 0)
@@ -303,6 +306,9 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 static int set_format(struct media_entity_pad *pad, struct v4l2_mbus_framefmt *format)
 {
 	int ret;
+
+	if (format->width == 0 || format->height == 0)
+		return 0;
 
 	printf("Setting up format %s %ux%u on pad %s/%u\n",
 		pixelcode_to_string(format->code), format->width, format->height,
@@ -349,6 +355,9 @@ static int set_frame_interval(struct media_entity *entity, struct v4l2_fract *in
 {
 	int ret;
 
+	if (interval->numerator == 0)
+		return 0;
+
 	printf("Setting up frame interval %u/%u on entity %s\n",
 		interval->numerator, interval->denominator, entity->info.name);
 
@@ -367,7 +376,7 @@ static int set_frame_interval(struct media_entity *entity, struct v4l2_fract *in
 
 static int setup_format(struct media_device *media, const char *p, char **endp)
 {
-	struct v4l2_mbus_framefmt format;
+	struct v4l2_mbus_framefmt format = { 0, 0, 0 };
 	struct media_entity_pad *pad;
 	struct v4l2_rect crop = { -1, -1, -1, -1 };
 	struct v4l2_fract interval = { 0, 0 };
@@ -397,13 +406,10 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 			return ret;
 	}
 
-	if (interval.numerator != 0) {
-		ret = set_frame_interval(pad->entity, &interval);
-		if (ret < 0) {
-			printf("Unable to set frame interval\n");
-			return ret;
-		}
-	}
+	ret = set_frame_interval(pad->entity, &interval);
+	if (ret < 0)
+		return ret;
+
 
 	/* If the pad is an output pad, automatically set the same format on
 	 * the remote subdev input pads, if any.
