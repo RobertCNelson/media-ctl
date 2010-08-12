@@ -209,7 +209,8 @@ static int parse_crop(struct v4l2_rect *crop, const char *p, char **endp)
 {
 	char *end;
 
-	for (; isspace(*p); ++p);
+	if (*p++ != '(')
+		return -EINVAL;
 
 	crop->left = strtoul(p, &end, 10);
 	if (*end != ',')
@@ -217,6 +218,8 @@ static int parse_crop(struct v4l2_rect *crop, const char *p, char **endp)
 
 	p = end + 1;
 	crop->top = strtoul(p, &end, 10);
+	if (*end++ != ')')
+		return -EINVAL;
 	if (*end != '/')
 		return -EINVAL;
 
@@ -274,7 +277,7 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 		return NULL;
 
 	for (p = end; isspace(*p); p++);
-	if (isdigit(*p)) {
+	if (*p == '(') {
 		ret = parse_crop(crop, p, &end);
 		if (ret < 0)
 			return NULL;
