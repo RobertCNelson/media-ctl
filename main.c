@@ -334,7 +334,7 @@ static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
 	if (crop->left == -1 || crop->top == -1)
 		return 0;
 
-	printf("Setting up crop rectangle %u,%u/%ux%u on pad %s/%u\n",
+	printf("Setting up crop rectangle (%u,%u)/%ux%u on pad %s/%u\n",
 		crop->left, crop->top, crop->width, crop->height,
 		pad->entity->info.name, pad->index);
 
@@ -345,7 +345,7 @@ static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
 		return ret;
 	}
 
-	printf("Crop rectangle set: %u,%u/%ux%u\n",
+	printf("Crop rectangle set: (%u,%u)/%ux%u\n",
 		crop->left, crop->top, crop->width, crop->height);
 
 	return 0;
