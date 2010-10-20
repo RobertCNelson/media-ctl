@@ -269,7 +269,10 @@ static void media_print_topology_dot(struct media_device *media)
 				npads++;
 			}
 
-			printf("} | %s | {", entity->info.name);
+			printf("} | %s", entity->info.name);
+			if (entity->devname)
+				printf("\\n%s", entity->devname);
+			printf(" | {");
 
 			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
 				if (entity->pads[j].type != MEDIA_PAD_TYPE_OUTPUT)
