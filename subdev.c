@@ -37,8 +37,8 @@ static struct {
 	const char *name;
 	enum v4l2_mbus_pixelcode code;
 } mbus_formats[] = {
-	{ "YUYV", V4L2_MBUS_FMT_YUYV16_1X16 },
-	{ "UYVY", V4L2_MBUS_FMT_UYVY16_1X16 },
+	{ "YUYV", V4L2_MBUS_FMT_YUYV8_1X16 },
+	{ "UYVY", V4L2_MBUS_FMT_UYVY8_1X16 },
 	{ "SGRBG10", V4L2_MBUS_FMT_SGRBG10_1X10 },
 	{ "SGRBG10_DPCM8", V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 },
 };
@@ -88,9 +88,9 @@ static int v4l2_subdev_open(struct media_entity *entity)
 
 int v4l2_subdev_get_format(struct media_entity *entity,
 	struct v4l2_mbus_framefmt *format, unsigned int pad,
-	enum v4l2_subdev_format which)
+	enum v4l2_subdev_format_whence which)
 {
-	struct v4l2_subdev_pad_format fmt;
+	struct v4l2_subdev_format fmt;
 	int ret;
 
 	ret = v4l2_subdev_open(entity);
@@ -111,9 +111,9 @@ int v4l2_subdev_get_format(struct media_entity *entity,
 
 int v4l2_subdev_set_format(struct media_entity *entity,
 	struct v4l2_mbus_framefmt *format, unsigned int pad,
-	enum v4l2_subdev_format which)
+	enum v4l2_subdev_format_whence which)
 {
-	struct v4l2_subdev_pad_format fmt;
+	struct v4l2_subdev_format fmt;
 	int ret;
 
 	ret = v4l2_subdev_open(entity);
@@ -134,9 +134,9 @@ int v4l2_subdev_set_format(struct media_entity *entity,
 }
 
 int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
-			 unsigned int pad, enum v4l2_subdev_format which)
+			 unsigned int pad, enum v4l2_subdev_format_whence which)
 {
-	struct v4l2_subdev_pad_crop crop;
+	struct v4l2_subdev_crop crop;
 	int ret;
 
 	ret = v4l2_subdev_open(entity);
@@ -156,9 +156,9 @@ int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
 }
 
 int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
-			 unsigned int pad, enum v4l2_subdev_format which)
+			 unsigned int pad, enum v4l2_subdev_format_whence which)
 {
-	struct v4l2_subdev_pad_crop crop;
+	struct v4l2_subdev_crop crop;
 	int ret;
 
 	ret = v4l2_subdev_open(entity);
@@ -200,7 +200,7 @@ int v4l2_subdev_set_frame_interval(struct media_entity *entity,
 }
 
 void v4l2_subdev_print_format(struct media_entity *entity,
-	unsigned int pad, enum v4l2_subdev_format which)
+	unsigned int pad, enum v4l2_subdev_format_whence which)
 {
 	struct v4l2_mbus_framefmt format;
 	struct v4l2_rect rect;

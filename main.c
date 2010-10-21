@@ -390,7 +390,7 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 		return -EINVAL;
 	}
 
-	if (pad->type == MEDIA_PAD_TYPE_OUTPUT) {
+	if (pad->flags & MEDIA_PAD_FLAG_OUTPUT) {
 		ret = set_crop(pad, &crop);
 		if (ret < 0)
 			return ret;
@@ -400,7 +400,7 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 	if (ret < 0)
 		return ret;
 
-	if (pad->type == MEDIA_PAD_TYPE_INPUT) {
+	if (pad->flags & MEDIA_PAD_FLAG_INPUT) {
 		ret = set_crop(pad, &crop);
 		if (ret < 0)
 			return ret;
@@ -414,7 +414,7 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 	/* If the pad is an output pad, automatically set the same format on
 	 * the remote subdev input pads, if any.
 	 */
-	if (pad->type == MEDIA_PAD_TYPE_OUTPUT) {
+	if (pad->flags & MEDIA_PAD_FLAG_OUTPUT) {
 		for (i = 0; i < pad->entity->info.links; ++i) {
 			struct media_entity_link *link = &pad->entity->links[i];
 			struct v4l2_mbus_framefmt remote_format;

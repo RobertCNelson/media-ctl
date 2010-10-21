@@ -35,6 +35,11 @@
 #include "subdev.h"
 #include "tools.h"
 
+static unsigned int media_entity_type(struct media_entity *entity)
+{
+	return entity->info.type & MEDIA_ENTITY_TYPE_MASK;
+}
+
 static const char *media_entity_type_to_string(unsigned type)
 {
 	static const struct {
@@ -47,6 +52,8 @@ static const char *media_entity_type_to_string(unsigned type)
 
 	unsigned int i;
 
+	type &= MEDIA_ENTITY_TYPE_MASK;
+
 	for (i = 0; i < ARRAY_SIZE(types); i++) {
 		if (types[i].type == type)
 			return types[i].name;
@@ -55,7 +62,7 @@ static const char *media_entity_type_to_string(unsigned type)
 	return "Unknown";
 }
 
-static const char *media_entity_subtype_to_string(unsigned type, unsigned subtype)
+static const char *media_entity_subtype_to_string(unsigned type)
 {
 	static const char *node_types[] = {
 		"Unknown",
@@ -66,19 +73,21 @@ static const char *media_entity_subtype_to_string(unsigned type, unsigned subtyp
 	};
 	static const char *subdev_types[] = {
 		"Unknown",
-		"Video Decoder",
-		"Video Encoder",
-		"Miscellaneous",
+		"Sensor",
+		"Flash",
+		"Lens",
 	};
 
-	switch (type) {
+	unsigned int subtype = type & MEDIA_ENTITY_SUBTYPE_MASK;
+
+	switch (type & MEDIA_ENTITY_TYPE_MASK) {
 	case MEDIA_ENTITY_TYPE_NODE:
-		if (subtype > 4)
+		if (subtype > ARRAY_SIZE(node_types))
 			subtype = 0;
 		return node_types[subtype];
 
 	case MEDIA_ENTITY_TYPE_SUBDEV:
-		if (subtype > 3)
+		if (subtype > ARRAY_SIZE(subdev_types))
 			subtype = 0;
 		return subdev_types[subtype];
 	default:
@@ -86,21 +95,21 @@ static const char *media_entity_subtype_to_string(unsigned type, unsigned subtyp
 	}
 }
 
-static const char *media_pad_type_to_string(unsigned type)
+static const char *media_pad_type_to_string(unsigned flag)
 {
 	static const struct {
-		__u32 type;
+		__u32 flag;
 		const char *name;
-	} types[] = {
-		{ MEDIA_PAD_TYPE_INPUT, "Input" },
-		{ MEDIA_PAD_TYPE_OUTPUT, "Output" },
+	} flags[] = {
+		{ MEDIA_PAD_FLAG_INPUT, "Input" },
+		{ MEDIA_PAD_FLAG_OUTPUT, "Output" },
 	};
 
 	unsigned int i;
 
-	for (i = 0; i < ARRAY_SIZE(types); i++) {
-		if (types[i].type == type)
-			return types[i].name;
+	for (i = 0; i < ARRAY_SIZE(flags); i++) {
+		if (flags[i].flag & flag)
+			return flags[i].name;
 	}
 
 	return "Unknown";
@@ -174,7 +183,7 @@ int media_setup_link(struct media_device *media,
 		     __u32 flags)
 {
 	struct media_entity_link *link;
-	struct media_user_link ulink;
+	struct media_link_desc ulink;
 	unsigned int i;
 	int ret;
 
@@ -196,12 +205,12 @@ int media_setup_link(struct media_device *media,
 	/* source pad */
 	ulink.source.entity = source->entity->info.id;
 	ulink.source.index = source->index;
-	ulink.source.type = MEDIA_PAD_TYPE_OUTPUT;
+	ulink.source.flags = MEDIA_PAD_FLAG_OUTPUT;
 
 	/* sink pad */
 	ulink.sink.entity = sink->entity->info.id;
 	ulink.sink.index = sink->index;
-	ulink.sink.type = MEDIA_PAD_TYPE_INPUT;
+	ulink.sink.flags = MEDIA_PAD_FLAG_INPUT;
 
 	ulink.flags = flags | (link->flags & MEDIA_LINK_FLAG_IMMUTABLE);
 
@@ -251,7 +260,7 @@ static void media_print_topology_dot(struct media_device *media)
 		struct media_entity *entity = &media->entities[i];
 		unsigned int npads;
 
-		switch (entity->info.type) {
+		switch (media_entity_type(entity)) {
 		case MEDIA_ENTITY_TYPE_NODE:
 			printf("\tn%08x [label=\"%s\\n%s\", shape=box, style=filled, "
 			       "fillcolor=yellow]\n",
@@ -262,7 +271,7 @@ static void media_print_topology_dot(struct media_device *media)
 			printf("\tn%08x [label=\"{{", entity->info.id);
 
 			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
-				if (entity->pads[j].type != MEDIA_PAD_TYPE_INPUT)
+				if (!(entity->pads[j].flags & MEDIA_PAD_FLAG_INPUT))
 					continue;
 
 				printf("%s<port%u> %u", npads ? " | " : "", j, j);
@@ -275,7 +284,7 @@ static void media_print_topology_dot(struct media_device *media)
 			printf(" | {");
 
 			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
-				if (entity->pads[j].type != MEDIA_PAD_TYPE_OUTPUT)
+				if (!(entity->pads[j].flags & MEDIA_PAD_FLAG_OUTPUT))
 					continue;
 
 				printf("%s<port%u> %u", npads ? " | " : "", j, j);
@@ -296,11 +305,11 @@ static void media_print_topology_dot(struct media_device *media)
 				continue;
 
 			printf("\tn%08x", link->source->entity->info.id);
-			if (link->source->entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV)
+			if (media_entity_type(link->source->entity) == MEDIA_ENTITY_TYPE_SUBDEV)
 				printf(":port%u", link->source->index);
 			printf(" -> ");
 			printf("n%08x", link->sink->entity->info.id);
-			if (link->sink->entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV)
+			if (media_entity_type(link->sink->entity) == MEDIA_ENTITY_TYPE_SUBDEV)
 				printf(":port%u", link->sink->index);
 
 			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
@@ -330,16 +339,16 @@ static void media_print_topology_text(struct media_device *media)
 			entity->info.links, entity->info.links > 1 ? "s" : "");
 		printf("%*ctype %s subtype %s\n", padding, ' ',
 			media_entity_type_to_string(entity->info.type),
-			media_entity_subtype_to_string(entity->info.type, entity->info.subtype));
+			media_entity_subtype_to_string(entity->info.type));
 		if (entity->devname[0])
 			printf("%*cdevice node name %s\n", padding, ' ', entity->devname);
 
 		for (j = 0; j < entity->info.pads; j++) {
 			struct media_entity_pad *pad = &entity->pads[j];
 
-			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->type));
+			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->flags));
 
-			if (entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV)
+			if (media_entity_type(entity) == MEDIA_ENTITY_TYPE_SUBDEV)
 				v4l2_subdev_print_format(entity, j, V4L2_SUBDEV_FORMAT_ACTIVE);
 
 			printf("\n");
@@ -381,12 +390,12 @@ static int media_enum_links(struct media_device *media)
 
 	for (id = 1; id <= media->entities_count; id++) {
 		struct media_entity *entity = &media->entities[id - 1];
-		struct media_user_links links;
+		struct media_links_enum links;
 		unsigned int i;
 
 		links.entity = entity->info.id;
-		links.pads = malloc(entity->info.pads * sizeof(struct media_user_pad));
-		links.links = malloc(entity->info.links * sizeof(struct media_user_link));
+		links.pads = malloc(entity->info.pads * sizeof(struct media_pad_desc));
+		links.links = malloc(entity->info.links * sizeof(struct media_link_desc));
 
 		if (ioctl(media->fd, MEDIA_IOC_ENUM_LINKS, &links) < 0) {
 			printf("%s: Unable to enumerate pads and links (%s).\n",
@@ -398,12 +407,12 @@ static int media_enum_links(struct media_device *media)
 
 		for (i = 0; i < entity->info.pads; ++i) {
 			entity->pads[i].entity = entity;
-			entity->pads[i].type = links.pads[i].type;
 			entity->pads[i].index = links.pads[i].index;
+			entity->pads[i].flags = links.pads[i].flags;
 		}
 
 		for (i = 0; i < entity->info.links; ++i) {
-			struct media_user_link *link = &links.links[i];
+			struct media_link_desc *link = &links.links[i];
 			struct media_entity *source;
 			struct media_entity *sink;
 
@@ -465,9 +474,8 @@ static int media_enum_entities(struct media_device *media)
 		media->entities_count++;
 
 		/* Find the corresponding device name. */
-		if ((entity->info.type != MEDIA_ENTITY_TYPE_NODE ||
-		     entity->info.type != MEDIA_NODE_TYPE_V4L) &&
-		    (entity->info.type != MEDIA_ENTITY_TYPE_SUBDEV))
+		if (media_entity_type(entity) != MEDIA_ENTITY_TYPE_NODE &&
+		    media_entity_type(entity) != MEDIA_ENTITY_TYPE_SUBDEV)
 			continue;
 
 		sprintf(sysname, "/sys/dev/char/%u:%u", entity->info.v4l.major,

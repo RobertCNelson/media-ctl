@@ -30,12 +30,12 @@ struct media_entity_link {
 
 struct media_entity_pad {
 	struct media_entity *entity;
-	__u32 type;
 	__u32 index;
+	__u32 flags;
 };
 
 struct media_entity {
-	struct media_user_entity info;
+	struct media_entity_desc info;
 	struct media_entity_pad *pads;
 	struct media_entity_link *links;
 
