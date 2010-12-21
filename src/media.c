@@ -38,13 +38,13 @@ struct media_pad *media_entity_remote_source(struct media_pad *pad)
 {
 	unsigned int i;
 
-	if (!(pad->flags & MEDIA_PAD_FLAG_INPUT))
+	if (!(pad->flags & MEDIA_PAD_FL_SINK))
 		return NULL;
 
 	for (i = 0; i < pad->entity->num_links; ++i) {
 		struct media_link *link = &pad->entity->links[i];
 
-		if (!(link->flags & MEDIA_LINK_FLAG_ENABLED))
+		if (!(link->flags & MEDIA_LNK_FL_ENABLED))
 			continue;
 
 		if (link->sink == pad)
@@ -112,14 +112,14 @@ int media_setup_link(struct media_device *media,
 	/* source pad */
 	ulink.source.entity = source->entity->info.id;
 	ulink.source.index = source->index;
-	ulink.source.flags = MEDIA_PAD_FLAG_OUTPUT;
+	ulink.source.flags = MEDIA_PAD_FL_SOURCE;
 
 	/* sink pad */
 	ulink.sink.entity = sink->entity->info.id;
 	ulink.sink.index = sink->index;
-	ulink.sink.flags = MEDIA_PAD_FLAG_INPUT;
+	ulink.sink.flags = MEDIA_PAD_FL_SINK;
 
-	ulink.flags = flags | (link->flags & MEDIA_LINK_FLAG_IMMUTABLE);
+	ulink.flags = flags | (link->flags & MEDIA_LNK_FL_IMMUTABLE);
 
 	ret = ioctl(media->fd, MEDIA_IOC_SETUP_LINK, &ulink);
 	if (ret < 0) {
@@ -144,12 +144,12 @@ int media_reset_links(struct media_device *media)
 		for (j = 0; j < entity->num_links; j++) {
 			struct media_link *link = &entity->links[j];
 
-			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE ||
+			if (link->flags & MEDIA_LNK_FL_IMMUTABLE ||
 			    link->source->entity != entity)
 				continue;
 
 			ret = media_setup_link(media, link->source, link->sink,
-					       link->flags & ~MEDIA_LINK_FLAG_ENABLED);
+					       link->flags & ~MEDIA_LNK_FL_ENABLED);
 			if (ret < 0)
 				return ret;
 		}
@@ -264,7 +264,7 @@ static int media_enum_entities(struct media_device *media)
 		entity = &media->entities[media->entities_count];
 		memset(entity, 0, sizeof(*entity));
 		entity->fd = -1;
-		entity->info.id = id | MEDIA_ENTITY_ID_FLAG_NEXT;
+		entity->info.id = id | MEDIA_ENT_ID_FLAG_NEXT;
 
 		ret = ioctl(media->fd, MEDIA_IOC_ENUM_ENTITIES, &entity->info);
 		if (ret < 0) {
@@ -287,8 +287,8 @@ static int media_enum_entities(struct media_device *media)
 		media->entities_count++;
 
 		/* Find the corresponding device name. */
-		if (media_entity_type(entity) != MEDIA_ENTITY_TYPE_DEVNODE &&
-		    media_entity_type(entity) != MEDIA_ENTITY_TYPE_V4L2_SUBDEV)
+		if (media_entity_type(entity) != MEDIA_ENT_T_DEVNODE &&
+		    media_entity_type(entity) != MEDIA_ENT_T_V4L2_SUBDEV)
 			continue;
 
 		sprintf(sysname, "/sys/dev/char/%u:%u", entity->info.v4l.major,

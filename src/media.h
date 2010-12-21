@@ -100,7 +100,7 @@ struct media_pad *media_entity_remote_source(struct media_pad *pad);
  */
 static inline unsigned int media_entity_type(struct media_entity *entity)
 {
-	return entity->info.type & MEDIA_ENTITY_TYPE_MASK;
+	return entity->info.type & MEDIA_ENT_TYPE_MASK;
 }
 
 /**
