@@ -111,8 +111,8 @@ static const char *media_entity_type_to_string(unsigned type)
 		__u32 type;
 		const char *name;
 	} types[] = {
-		{ MEDIA_ENTITY_TYPE_NODE, "Node" },
-		{ MEDIA_ENTITY_TYPE_SUBDEV, "V4L2 subdev" },
+		{ MEDIA_ENTITY_TYPE_DEVNODE, "Node" },
+		{ MEDIA_ENTITY_TYPE_V4L2_SUBDEV, "V4L2 subdev" },
 	};
 
 	unsigned int i;
@@ -146,12 +146,12 @@ static const char *media_entity_subtype_to_string(unsigned type)
 	unsigned int subtype = type & MEDIA_ENTITY_SUBTYPE_MASK;
 
 	switch (type & MEDIA_ENTITY_TYPE_MASK) {
-	case MEDIA_ENTITY_TYPE_NODE:
+	case MEDIA_ENTITY_TYPE_DEVNODE:
 		if (subtype >= ARRAY_SIZE(node_types))
 			subtype = 0;
 		return node_types[subtype];
 
-	case MEDIA_ENTITY_TYPE_SUBDEV:
+	case MEDIA_ENTITY_TYPE_V4L2_SUBDEV:
 		if (subtype >= ARRAY_SIZE(subdev_types))
 			subtype = 0;
 		return subdev_types[subtype];
@@ -192,13 +192,13 @@ static void media_print_topology_dot(struct media_device *media)
 		unsigned int npads;
 
 		switch (media_entity_type(entity)) {
-		case MEDIA_ENTITY_TYPE_NODE:
+		case MEDIA_ENTITY_TYPE_DEVNODE:
 			printf("\tn%08x [label=\"%s\\n%s\", shape=box, style=filled, "
 			       "fillcolor=yellow]\n",
 			       entity->info.id, entity->info.name, entity->devname);
 			break;
 
-		case MEDIA_ENTITY_TYPE_SUBDEV:
+		case MEDIA_ENTITY_TYPE_V4L2_SUBDEV:
 			printf("\tn%08x [label=\"{{", entity->info.id);
 
 			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
@@ -236,16 +236,16 @@ static void media_print_topology_dot(struct media_device *media)
 				continue;
 
 			printf("\tn%08x", link->source->entity->info.id);
-			if (media_entity_type(link->source->entity) == MEDIA_ENTITY_TYPE_SUBDEV)
+			if (media_entity_type(link->source->entity) == MEDIA_ENTITY_TYPE_V4L2_SUBDEV)
 				printf(":port%u", link->source->index);
 			printf(" -> ");
 			printf("n%08x", link->sink->entity->info.id);
-			if (media_entity_type(link->sink->entity) == MEDIA_ENTITY_TYPE_SUBDEV)
+			if (media_entity_type(link->sink->entity) == MEDIA_ENTITY_TYPE_V4L2_SUBDEV)
 				printf(":port%u", link->sink->index);
 
 			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
 				printf(" [style=bold]");
-			else if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
+			else if (!(link->flags & MEDIA_LINK_FLAG_ENABLED))
 				printf(" [style=dashed]");
 			printf("\n");
 		}
@@ -279,7 +279,7 @@ static void media_print_topology_text(struct media_device *media)
 
 			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->flags));
 
-			if (media_entity_type(entity) == MEDIA_ENTITY_TYPE_SUBDEV)
+			if (media_entity_type(entity) == MEDIA_ENTITY_TYPE_V4L2_SUBDEV)
 				v4l2_subdev_print_format(entity, j, V4L2_SUBDEV_FORMAT_ACTIVE);
 
 			printf("\n");
@@ -296,7 +296,7 @@ static void media_print_topology_text(struct media_device *media)
 
 				if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
 					printf("IMMUTABLE,");
-				if (link->flags & MEDIA_LINK_FLAG_ACTIVE)
+				if (link->flags & MEDIA_LINK_FLAG_ENABLED)
 					printf("ACTIVE");
 
 				printf("]\n");
@@ -695,11 +695,11 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 			struct media_link *link = &pad->entity->links[i];
 			struct v4l2_mbus_framefmt remote_format;
 
-			if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
+			if (!(link->flags & MEDIA_LINK_FLAG_ENABLED))
 				continue;
 
 			if (link->source == pad &&
-			    link->sink->entity->info.type == MEDIA_ENTITY_TYPE_SUBDEV) {
+			    link->sink->entity->info.type == MEDIA_ENTITY_TYPE_V4L2_SUBDEV) {
 				remote_format = format;
 				set_format(link->sink, &remote_format);
 			}

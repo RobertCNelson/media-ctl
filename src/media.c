@@ -44,7 +44,7 @@ struct media_pad *media_entity_remote_source(struct media_pad *pad)
 	for (i = 0; i < pad->entity->num_links; ++i) {
 		struct media_link *link = &pad->entity->links[i];
 
-		if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
+		if (!(link->flags & MEDIA_LINK_FLAG_ENABLED))
 			continue;
 
 		if (link->sink == pad)
@@ -149,7 +149,7 @@ int media_reset_links(struct media_device *media)
 				continue;
 
 			ret = media_setup_link(media, link->source, link->sink,
-					       link->flags & ~MEDIA_LINK_FLAG_ACTIVE);
+					       link->flags & ~MEDIA_LINK_FLAG_ENABLED);
 			if (ret < 0)
 				return ret;
 		}
@@ -287,8 +287,8 @@ static int media_enum_entities(struct media_device *media)
 		media->entities_count++;
 
 		/* Find the corresponding device name. */
-		if (media_entity_type(entity) != MEDIA_ENTITY_TYPE_NODE &&
-		    media_entity_type(entity) != MEDIA_ENTITY_TYPE_SUBDEV)
+		if (media_entity_type(entity) != MEDIA_ENTITY_TYPE_DEVNODE &&
+		    media_entity_type(entity) != MEDIA_ENTITY_TYPE_V4L2_SUBDEV)
 			continue;
 
 		sprintf(sysname, "/sys/dev/char/%u:%u", entity->info.v4l.major,
