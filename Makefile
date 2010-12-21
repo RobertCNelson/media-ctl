@@ -1,8 +1,7 @@
-SRCARCH ?= arm
-CROSS_COMPILE ?= arm-none-linux-gnueabi-
-KDIR ?= /usr/src/linux
+CROSS_COMPILE ?=
+KDIR ?=
 
-KINC := -I$(KDIR)/include -I$(KDIR)/arch/$(SRCARCH)/include
+KINC := -I$(KDIR)/usr/include
 CC   := $(CROSS_COMPILE)gcc
 
 CFLAGS += -O2 -Wall -fpic -I. $(KINC)
