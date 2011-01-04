@@ -82,12 +82,12 @@ static const char *media_entity_subtype_to_string(unsigned type)
 
 	switch (type & MEDIA_ENTITY_TYPE_MASK) {
 	case MEDIA_ENTITY_TYPE_NODE:
-		if (subtype > ARRAY_SIZE(node_types))
+		if (subtype >= ARRAY_SIZE(node_types))
 			subtype = 0;
 		return node_types[subtype];
 
 	case MEDIA_ENTITY_TYPE_SUBDEV:
-		if (subtype > ARRAY_SIZE(subdev_types))
+		if (subtype >= ARRAY_SIZE(subdev_types))
 			subtype = 0;
 		return subdev_types[subtype];
 	default:
