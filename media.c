@@ -424,11 +424,11 @@ static int media_enum_links(struct media_device *media)
 					id, i, link->source.entity, link->source.index,
 					link->sink.entity, link->sink.index);
 				ret = -EINVAL;
+			} else {
+				entity->links[i].source = &source->pads[link->source.index];
+				entity->links[i].sink = &sink->pads[link->sink.index];
+				entity->links[i].flags = links.links[i].flags;
 			}
-
-			entity->links[i].source = &source->pads[link->source.index];
-			entity->links[i].sink = &sink->pads[link->sink.index];
-			entity->links[i].flags = links.links[i].flags;
 		}
 
 		free(links.pads);
