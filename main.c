@@ -272,6 +272,8 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 	if (*p++ != '[')
 		return NULL;
 
+	for (; isspace(*p); ++p);
+
 	if (isalnum(*p)) {
 		ret = parse_format(format, p, &end);
 		if (ret < 0)
