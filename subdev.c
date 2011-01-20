@@ -37,6 +37,7 @@ static struct {
 	const char *name;
 	enum v4l2_mbus_pixelcode code;
 } mbus_formats[] = {
+	{ "Y8", V4L2_MBUS_FMT_Y8_1X8},
 	{ "YUYV", V4L2_MBUS_FMT_YUYV8_1X16 },
 	{ "UYVY", V4L2_MBUS_FMT_UYVY8_1X16 },
 	{ "SGRBG10", V4L2_MBUS_FMT_SGRBG10_1X10 },
