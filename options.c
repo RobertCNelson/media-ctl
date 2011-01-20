@@ -59,7 +59,7 @@ static void usage(const char *argv0, int verbose)
 	printf("\tframe interval  = numerator, '/', denominator ;\n");
 	printf("where the fields are\n");
 	printf("\tentity number   Entity numeric identifier\n");
-	printf("\tentity name     Entify name (string) \n");
+	printf("\tentity name     Entity name (string) \n");
 	printf("\tpad number      Pad numeric identifier\n");
 	printf("\tflags           Link flags (0: inactive, 1: active)\n");
 	printf("\tfcc             Format FourCC\n");

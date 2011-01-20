@@ -343,7 +343,7 @@ static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
 	ret = v4l2_subdev_set_crop(pad->entity, crop, pad->index,
 				   V4L2_SUBDEV_FORMAT_ACTIVE);
 	if (ret < 0) {
-		printf("Unable to set crop rectangle: %s (%d)", strerror(-ret), ret);
+		printf("Unable to set crop rectangle: %s (%d)\n", strerror(-ret), ret);
 		return ret;
 	}
 
