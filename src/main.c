@@ -267,7 +267,7 @@ static void media_print_topology_text(struct media_device *media)
 		padding = printf("- entity %u: ", entity->info.id);
 		printf("%s (%u pad%s, %u link%s)\n", entity->info.name,
 			entity->info.pads, entity->info.pads > 1 ? "s" : "",
-			entity->info.links, entity->info.links > 1 ? "s" : "");
+			entity->num_links, entity->num_links > 1 ? "s" : "");
 		printf("%*ctype %s subtype %s\n", padding, ' ',
 			media_entity_type_to_string(entity->info.type),
 			media_entity_subtype_to_string(entity->info.type));
@@ -286,13 +286,17 @@ static void media_print_topology_text(struct media_device *media)
 
 			for (k = 0; k < entity->num_links; k++) {
 				struct media_link *link = &entity->links[k];
+				struct media_pad *source = link->source;
+				struct media_pad *sink = link->sink;
 
-				if (link->source->entity != entity ||
-				    link->source->index != j)
+				if (source->entity == entity && source->index == j)
+					printf("\t\t-> '%s':pad%u [",
+						sink->entity->info.name, sink->index);
+				else if (sink->entity == entity && sink->index == j)
+					printf("\t\t<- '%s':pad%u [",
+						source->entity->info.name, source->index);
+				else
 					continue;
-
-				printf("\t\t-> '%s':pad%u [",
-					link->sink->entity->info.name, link->sink->index);
 
 				if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
 					printf("IMMUTABLE,");
