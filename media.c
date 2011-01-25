@@ -44,7 +44,7 @@ struct media_entity_pad *media_entity_remote_source(struct media_entity_pad *pad
 	if (!(pad->flags & MEDIA_PAD_FLAG_INPUT))
 		return NULL;
 
-	for (i = 0; i < pad->entity->info.links; ++i) {
+	for (i = 0; i < pad->entity->num_links; ++i) {
 		struct media_entity_link *link = &pad->entity->links[i];
 
 		if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
@@ -106,7 +106,7 @@ int media_setup_link(struct media_device *media,
 	unsigned int i;
 	int ret;
 
-	for (i = 0; i < source->entity->info.links; i++) {
+	for (i = 0; i < source->entity->num_links; i++) {
 		link = &source->entity->links[i];
 
 		if (link->source->entity == source->entity &&
@@ -116,7 +116,7 @@ int media_setup_link(struct media_device *media,
 			break;
 	}
 
-	if (i == source->entity->info.links) {
+	if (i == source->entity->num_links) {
 		printf("%s: Link not found\n", __func__);
 		return -EINVAL;
 	}
@@ -152,10 +152,11 @@ int media_reset_links(struct media_device *media)
 	for (i = 0; i < media->entities_count; ++i) {
 		struct media_entity *entity = &media->entities[i];
 
-		for (j = 0; j < entity->info.links; j++) {
+		for (j = 0; j < entity->num_links; j++) {
 			struct media_entity_link *link = &entity->links[j];
 
-			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
+			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE ||
+			    link->source->entity != entity)
 				continue;
 
 			ret = media_setup_link(media, link->source, link->sink,
@@ -166,6 +167,27 @@ int media_reset_links(struct media_device *media)
 	}
 
 	return 0;
+}
+
+static struct media_entity_link *media_entity_add_link(struct media_entity *entity)
+{
+	if (entity->num_links >= entity->max_links) {
+		struct media_entity_link *links = entity->links;
+		unsigned int max_links = entity->max_links * 2;
+		unsigned int i;
+
+		links = realloc(links, max_links * sizeof *links);
+		if (links == NULL)
+			return NULL;
+
+		for (i = 0; i < entity->num_links; ++i)
+			links[i].twin->twin = &links[i];
+
+		entity->max_links = max_links;
+		entity->links = links;
+	}
+
+	return &entity->links[entity->num_links++];
 }
 
 static int media_enum_links(struct media_device *media)
@@ -198,6 +220,8 @@ static int media_enum_links(struct media_device *media)
 
 		for (i = 0; i < entity->info.links; ++i) {
 			struct media_link_desc *link = &links.links[i];
+			struct media_entity_link *fwdlink;
+			struct media_entity_link *backlink;
 			struct media_entity *source;
 			struct media_entity *sink;
 
@@ -210,9 +234,18 @@ static int media_enum_links(struct media_device *media)
 					link->sink.entity, link->sink.index);
 				ret = -EINVAL;
 			} else {
-				entity->links[i].source = &source->pads[link->source.index];
-				entity->links[i].sink = &sink->pads[link->sink.index];
-				entity->links[i].flags = links.links[i].flags;
+				fwdlink = media_entity_add_link(source);
+				fwdlink->source = &source->pads[link->source.index];
+				fwdlink->sink = &sink->pads[link->sink.index];
+				fwdlink->flags = links.links[i].flags;
+
+				backlink = media_entity_add_link(sink);
+				backlink->source = &source->pads[link->source.index];
+				backlink->sink = &sink->pads[link->sink.index];
+				backlink->flags = links.links[i].flags;
+
+				fwdlink->twin = backlink;
+				backlink->twin = fwdlink;
 			}
 		}
 
@@ -251,8 +284,14 @@ static int media_enum_entities(struct media_device *media)
 			return -errno;
 		}
 
+		/* Number of links (for outbound links) plus number of pads (for
+		 * inbound links) is a good safe initial estimate of the total
+		 * number of links.
+		 */
+		entity->max_links = entity->info.pads + entity->info.links;
+
 		entity->pads = malloc(entity->info.pads * sizeof(*entity->pads));
-		entity->links = malloc(entity->info.links * sizeof(*entity->links));
+		entity->links = malloc(entity->max_links * sizeof(*entity->links));
 		if (entity->pads == NULL || entity->links == NULL)
 			return -ENOMEM;
 

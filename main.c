@@ -229,7 +229,7 @@ static void media_print_topology_dot(struct media_device *media)
 			continue;
 		}
 
-		for (j = 0; j < entity->info.links; j++) {
+		for (j = 0; j < entity->num_links; j++) {
 			struct media_entity_link *link = &entity->links[j];
 
 			if (link->source->entity != entity)
@@ -284,7 +284,7 @@ static void media_print_topology_text(struct media_device *media)
 
 			printf("\n");
 
-			for (k = 0; k < entity->info.links; k++) {
+			for (k = 0; k < entity->num_links; k++) {
 				struct media_entity_link *link = &entity->links[k];
 
 				if (link->source->entity != entity ||
@@ -383,7 +383,7 @@ static struct media_entity_link *parse_link(struct media_device *media, const ch
 
 	*endp = end;
 
-	for (i = 0; i < source->entity->info.links; i++) {
+	for (i = 0; i < source->entity->num_links; i++) {
 		link = &source->entity->links[i];
 
 		if (link->source == source && link->sink == sink)
@@ -691,7 +691,7 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 	 * the remote subdev input pads, if any.
 	 */
 	if (pad->flags & MEDIA_PAD_FLAG_OUTPUT) {
-		for (i = 0; i < pad->entity->info.links; ++i) {
+		for (i = 0; i < pad->entity->num_links; ++i) {
 			struct media_entity_link *link = &pad->entity->links[i];
 			struct v4l2_mbus_framefmt remote_format;
 

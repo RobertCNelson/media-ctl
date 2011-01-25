@@ -25,6 +25,7 @@
 struct media_entity_link {
 	struct media_entity_pad *source;
 	struct media_entity_pad *sink;
+	struct media_entity_link *twin;
 	__u32 flags;
 };
 
@@ -38,6 +39,8 @@ struct media_entity {
 	struct media_entity_desc info;
 	struct media_entity_pad *pads;
 	struct media_entity_link *links;
+	unsigned int max_links;
+	unsigned int num_links;
 
 	char devname[32];
 	int fd;
