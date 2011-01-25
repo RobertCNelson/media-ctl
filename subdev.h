@@ -24,6 +24,9 @@
 
 struct media_entity;
 
+int v4l2_subdev_open(struct media_entity *entity);
+
+void v4l2_subdev_close(struct media_entity *entity);
 
 int v4l2_subdev_get_format(struct media_entity *entity,
 	struct v4l2_mbus_framefmt *format, unsigned int pad,

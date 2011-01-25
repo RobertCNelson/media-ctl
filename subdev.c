@@ -33,7 +33,7 @@
 #include "subdev.h"
 #include "tools.h"
 
-static int v4l2_subdev_open(struct media_entity *entity)
+int v4l2_subdev_open(struct media_entity *entity)
 {
 	if (entity->fd != -1)
 		return 0;
@@ -46,6 +46,11 @@ static int v4l2_subdev_open(struct media_entity *entity)
 	}
 
 	return 0;
+}
+
+void v4l2_subdev_close(struct media_entity *entity)
+{
+	close(entity->fd);
 }
 
 int v4l2_subdev_get_format(struct media_entity *entity,
