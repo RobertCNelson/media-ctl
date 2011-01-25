@@ -39,6 +39,280 @@
 #include "media.h"
 #include "options.h"
 #include "subdev.h"
+#include "tools.h"
+
+/* -----------------------------------------------------------------------------
+ * Printing
+ */
+
+static struct {
+	const char *name;
+	enum v4l2_mbus_pixelcode code;
+} mbus_formats[] = {
+	{ "Y8", V4L2_MBUS_FMT_Y8_1X8},
+	{ "YUYV", V4L2_MBUS_FMT_YUYV8_1X16 },
+	{ "UYVY", V4L2_MBUS_FMT_UYVY8_1X16 },
+	{ "SGRBG10", V4L2_MBUS_FMT_SGRBG10_1X10 },
+	{ "SGRBG10_DPCM8", V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 },
+};
+
+static const char *pixelcode_to_string(enum v4l2_mbus_pixelcode code)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
+		if (mbus_formats[i].code == code)
+			return mbus_formats[i].name;
+	}
+
+	return "unknown";
+}
+
+static enum v4l2_mbus_pixelcode string_to_pixelcode(const char *string,
+					     unsigned int length)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
+		if (strncmp(mbus_formats[i].name, string, length) == 0)
+			break;
+	}
+
+	if (i == ARRAY_SIZE(mbus_formats))
+		return (enum v4l2_mbus_pixelcode)-1;
+
+	return mbus_formats[i].code;
+}
+
+static void v4l2_subdev_print_format(struct media_entity *entity,
+	unsigned int pad, enum v4l2_subdev_format_whence which)
+{
+	struct v4l2_mbus_framefmt format;
+	struct v4l2_rect rect;
+	int ret;
+
+	ret = v4l2_subdev_get_format(entity, &format, pad, which);
+	if (ret != 0)
+		return;
+
+	printf("[%s %ux%u", pixelcode_to_string(format.code),
+	       format.width, format.height);
+
+	ret = v4l2_subdev_get_crop(entity, &rect, pad, which);
+	if (ret == 0)
+		printf(" (%u,%u)/%ux%u", rect.left, rect.top,
+		       rect.width, rect.height);
+	printf("]");
+}
+
+static const char *media_entity_type_to_string(unsigned type)
+{
+	static const struct {
+		__u32 type;
+		const char *name;
+	} types[] = {
+		{ MEDIA_ENTITY_TYPE_NODE, "Node" },
+		{ MEDIA_ENTITY_TYPE_SUBDEV, "V4L2 subdev" },
+	};
+
+	unsigned int i;
+
+	type &= MEDIA_ENTITY_TYPE_MASK;
+
+	for (i = 0; i < ARRAY_SIZE(types); i++) {
+		if (types[i].type == type)
+			return types[i].name;
+	}
+
+	return "Unknown";
+}
+
+static const char *media_entity_subtype_to_string(unsigned type)
+{
+	static const char *node_types[] = {
+		"Unknown",
+		"V4L",
+		"FB",
+		"ALSA",
+		"DVB",
+	};
+	static const char *subdev_types[] = {
+		"Unknown",
+		"Sensor",
+		"Flash",
+		"Lens",
+	};
+
+	unsigned int subtype = type & MEDIA_ENTITY_SUBTYPE_MASK;
+
+	switch (type & MEDIA_ENTITY_TYPE_MASK) {
+	case MEDIA_ENTITY_TYPE_NODE:
+		if (subtype >= ARRAY_SIZE(node_types))
+			subtype = 0;
+		return node_types[subtype];
+
+	case MEDIA_ENTITY_TYPE_SUBDEV:
+		if (subtype >= ARRAY_SIZE(subdev_types))
+			subtype = 0;
+		return subdev_types[subtype];
+	default:
+		return node_types[0];
+	}
+}
+
+static const char *media_pad_type_to_string(unsigned flag)
+{
+	static const struct {
+		__u32 flag;
+		const char *name;
+	} flags[] = {
+		{ MEDIA_PAD_FLAG_INPUT, "Input" },
+		{ MEDIA_PAD_FLAG_OUTPUT, "Output" },
+	};
+
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(flags); i++) {
+		if (flags[i].flag & flag)
+			return flags[i].name;
+	}
+
+	return "Unknown";
+}
+
+static void media_print_topology_dot(struct media_device *media)
+{
+	unsigned int i, j;
+
+	printf("digraph board {\n");
+	printf("\trankdir=TB\n");
+
+	for (i = 0; i < media->entities_count; ++i) {
+		struct media_entity *entity = &media->entities[i];
+		unsigned int npads;
+
+		switch (media_entity_type(entity)) {
+		case MEDIA_ENTITY_TYPE_NODE:
+			printf("\tn%08x [label=\"%s\\n%s\", shape=box, style=filled, "
+			       "fillcolor=yellow]\n",
+			       entity->info.id, entity->info.name, entity->devname);
+			break;
+
+		case MEDIA_ENTITY_TYPE_SUBDEV:
+			printf("\tn%08x [label=\"{{", entity->info.id);
+
+			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
+				if (!(entity->pads[j].flags & MEDIA_PAD_FLAG_INPUT))
+					continue;
+
+				printf("%s<port%u> %u", npads ? " | " : "", j, j);
+				npads++;
+			}
+
+			printf("} | %s", entity->info.name);
+			if (entity->devname)
+				printf("\\n%s", entity->devname);
+			printf(" | {");
+
+			for (j = 0, npads = 0; j < entity->info.pads; ++j) {
+				if (!(entity->pads[j].flags & MEDIA_PAD_FLAG_OUTPUT))
+					continue;
+
+				printf("%s<port%u> %u", npads ? " | " : "", j, j);
+				npads++;
+			}
+
+			printf("}}\", shape=Mrecord, style=filled, fillcolor=green]\n");
+			break;
+
+		default:
+			continue;
+		}
+
+		for (j = 0; j < entity->info.links; j++) {
+			struct media_entity_link *link = &entity->links[j];
+
+			if (link->source->entity != entity)
+				continue;
+
+			printf("\tn%08x", link->source->entity->info.id);
+			if (media_entity_type(link->source->entity) == MEDIA_ENTITY_TYPE_SUBDEV)
+				printf(":port%u", link->source->index);
+			printf(" -> ");
+			printf("n%08x", link->sink->entity->info.id);
+			if (media_entity_type(link->sink->entity) == MEDIA_ENTITY_TYPE_SUBDEV)
+				printf(":port%u", link->sink->index);
+
+			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
+				printf(" [style=bold]");
+			else if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
+				printf(" [style=dashed]");
+			printf("\n");
+		}
+	}
+
+	printf("}\n");
+}
+
+static void media_print_topology_text(struct media_device *media)
+{
+	unsigned int i, j, k;
+	unsigned int padding;
+
+	printf("Device topology\n");
+
+	for (i = 0; i < media->entities_count; ++i) {
+		struct media_entity *entity = &media->entities[i];
+
+		padding = printf("- entity %u: ", entity->info.id);
+		printf("%s (%u pad%s, %u link%s)\n", entity->info.name,
+			entity->info.pads, entity->info.pads > 1 ? "s" : "",
+			entity->info.links, entity->info.links > 1 ? "s" : "");
+		printf("%*ctype %s subtype %s\n", padding, ' ',
+			media_entity_type_to_string(entity->info.type),
+			media_entity_subtype_to_string(entity->info.type));
+		if (entity->devname[0])
+			printf("%*cdevice node name %s\n", padding, ' ', entity->devname);
+
+		for (j = 0; j < entity->info.pads; j++) {
+			struct media_entity_pad *pad = &entity->pads[j];
+
+			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->flags));
+
+			if (media_entity_type(entity) == MEDIA_ENTITY_TYPE_SUBDEV)
+				v4l2_subdev_print_format(entity, j, V4L2_SUBDEV_FORMAT_ACTIVE);
+
+			printf("\n");
+
+			for (k = 0; k < entity->info.links; k++) {
+				struct media_entity_link *link = &entity->links[k];
+
+				if (link->source->entity != entity ||
+				    link->source->index != j)
+					continue;
+
+				printf("\t\t-> '%s':pad%u [",
+					link->sink->entity->info.name, link->sink->index);
+
+				if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE)
+					printf("IMMUTABLE,");
+				if (link->flags & MEDIA_LINK_FLAG_ACTIVE)
+					printf("ACTIVE");
+
+				printf("]\n");
+			}
+		}
+		printf("\n");
+	}
+}
+
+void media_print_topology(struct media_device *media, int dot)
+{
+	if (dot)
+		media_print_topology_dot(media);
+	else
+		media_print_topology_text(media);
+}
 
 /* -----------------------------------------------------------------------------
  * Links setup

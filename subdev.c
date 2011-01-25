@@ -33,45 +33,6 @@
 #include "subdev.h"
 #include "tools.h"
 
-static struct {
-	const char *name;
-	enum v4l2_mbus_pixelcode code;
-} mbus_formats[] = {
-	{ "Y8", V4L2_MBUS_FMT_Y8_1X8},
-	{ "YUYV", V4L2_MBUS_FMT_YUYV8_1X16 },
-	{ "UYVY", V4L2_MBUS_FMT_UYVY8_1X16 },
-	{ "SGRBG10", V4L2_MBUS_FMT_SGRBG10_1X10 },
-	{ "SGRBG10_DPCM8", V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8 },
-};
-
-const char *pixelcode_to_string(enum v4l2_mbus_pixelcode code)
-{
-	unsigned int i;
-
-	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
-		if (mbus_formats[i].code == code)
-			return mbus_formats[i].name;
-	}
-
-	return "unknown";
-}
-
-enum v4l2_mbus_pixelcode string_to_pixelcode(const char *string,
-					     unsigned int length)
-{
-	unsigned int i;
-
-	for (i = 0; i < ARRAY_SIZE(mbus_formats); ++i) {
-		if (strncmp(mbus_formats[i].name, string, length) == 0)
-			break;
-	}
-
-	if (i == ARRAY_SIZE(mbus_formats))
-		return (enum v4l2_mbus_pixelcode)-1;
-
-	return mbus_formats[i].code;
-}
-
 static int v4l2_subdev_open(struct media_entity *entity)
 {
 	if (entity->fd != -1)
@@ -199,25 +160,3 @@ int v4l2_subdev_set_frame_interval(struct media_entity *entity,
 	*interval = ival.interval;
 	return 0;
 }
-
-void v4l2_subdev_print_format(struct media_entity *entity,
-	unsigned int pad, enum v4l2_subdev_format_whence which)
-{
-	struct v4l2_mbus_framefmt format;
-	struct v4l2_rect rect;
-	int ret;
-
-	ret = v4l2_subdev_get_format(entity, &format, pad, which);
-	if (ret != 0)
-		return;
-
-	printf("[%s %ux%u", pixelcode_to_string(format.code),
-	       format.width, format.height);
-
-	ret = v4l2_subdev_get_crop(entity, &rect, pad, which);
-	if (ret == 0)
-		printf(" (%u,%u)/%ux%u", rect.left, rect.top,
-		       rect.width, rect.height);
-	printf("]");
-}
-
