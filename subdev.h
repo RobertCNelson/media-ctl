@@ -125,6 +125,23 @@ int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
 	unsigned int pad, enum v4l2_subdev_format_whence which);
 
 /**
+ * @brief Retrieve the frame interval on a sub-device.
+ * @param entity - subdev-device media entity.
+ * @param interval - frame interval to be filled.
+ *
+ * Retrieve the current frame interval on subdev @a entity and store it in the
+ * @a interval structure.
+ *
+ * Frame interval retrieving is usually supported only on devices at the
+ * beginning of video pipelines, such as sensors.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+
+int v4l2_subdev_get_frame_interval(struct media_entity *entity,
+	struct v4l2_fract *interval);
+
+/**
  * @brief Set the frame interval on a sub-device.
  * @param entity - subdev-device media entity.
  * @param interval - frame interval.
