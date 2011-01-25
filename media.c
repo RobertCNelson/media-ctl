@@ -34,9 +34,6 @@
 #include "media.h"
 #include "tools.h"
 
-/*
- * media_entity_remote_pad -
- */
 struct media_pad *media_entity_remote_source(struct media_pad *pad)
 {
 	unsigned int i;
@@ -57,9 +54,6 @@ struct media_pad *media_entity_remote_source(struct media_pad *pad)
 	return NULL;
 }
 
-/*
- * media_get_entity_by_name -
- */
 struct media_entity *media_get_entity_by_name(struct media_device *media,
 					      const char *name, size_t length)
 {
@@ -75,9 +69,6 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
 	return NULL;
 }
 
-/*
- * media_get_entity_by_id -
- */
 struct media_entity *media_get_entity_by_id(struct media_device *media,
 					    __u32 id)
 {
@@ -93,9 +84,6 @@ struct media_entity *media_get_entity_by_id(struct media_device *media,
 	return NULL;
 }
 
-/*
- * media_setup_link -
- */
 int media_setup_link(struct media_device *media,
 		     struct media_pad *source,
 		     struct media_pad *sink,
@@ -330,9 +318,6 @@ static int media_enum_entities(struct media_device *media)
 	return 0;
 }
 
-/*
- * media_open -
- */
 struct media_device *media_open(const char *name, int verbose)
 {
 	struct media_device *media;
@@ -381,9 +366,6 @@ struct media_device *media_open(const char *name, int verbose)
 	return media;
 }
 
-/*
- * media_close -
- */
 void media_close(struct media_device *media)
 {
 	unsigned int i;
