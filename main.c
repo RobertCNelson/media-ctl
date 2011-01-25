@@ -230,7 +230,7 @@ static void media_print_topology_dot(struct media_device *media)
 		}
 
 		for (j = 0; j < entity->num_links; j++) {
-			struct media_entity_link *link = &entity->links[j];
+			struct media_link *link = &entity->links[j];
 
 			if (link->source->entity != entity)
 				continue;
@@ -275,7 +275,7 @@ static void media_print_topology_text(struct media_device *media)
 			printf("%*cdevice node name %s\n", padding, ' ', entity->devname);
 
 		for (j = 0; j < entity->info.pads; j++) {
-			struct media_entity_pad *pad = &entity->pads[j];
+			struct media_pad *pad = &entity->pads[j];
 
 			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->flags));
 
@@ -285,7 +285,7 @@ static void media_print_topology_text(struct media_device *media)
 			printf("\n");
 
 			for (k = 0; k < entity->num_links; k++) {
-				struct media_entity_link *link = &entity->links[k];
+				struct media_link *link = &entity->links[k];
 
 				if (link->source->entity != entity ||
 				    link->source->index != j)
@@ -318,7 +318,7 @@ void media_print_topology(struct media_device *media, int dot)
  * Links setup
  */
 
-static struct media_entity_pad *parse_pad(struct media_device *media, const char *p, char **endp)
+static struct media_pad *parse_pad(struct media_device *media, const char *p, char **endp)
 {
 	unsigned int entity_id, pad;
 	struct media_entity *entity;
@@ -361,11 +361,11 @@ static struct media_entity_pad *parse_pad(struct media_device *media, const char
 	return &entity->pads[pad];
 }
 
-static struct media_entity_link *parse_link(struct media_device *media, const char *p, char **endp)
+static struct media_link *parse_link(struct media_device *media, const char *p, char **endp)
 {
-	struct media_entity_link *link;
-	struct media_entity_pad *source;
-	struct media_entity_pad *sink;
+	struct media_link *link;
+	struct media_pad *source;
+	struct media_pad *sink;
 	unsigned int i;
 	char *end;
 
@@ -395,7 +395,7 @@ static struct media_entity_link *parse_link(struct media_device *media, const ch
 
 static int setup_link(struct media_device *media, const char *p, char **endp)
 {
-	struct media_entity_link *link;
+	struct media_link *link;
 	__u32 flags;
 	char *end;
 
@@ -528,11 +528,11 @@ static int parse_frame_interval(struct v4l2_fract *interval, const char *p, char
 	return 0;
 }
 
-static struct media_entity_pad *parse_pad_format(struct media_device *media,
+static struct media_pad *parse_pad_format(struct media_device *media,
 	struct v4l2_mbus_framefmt *format, struct v4l2_rect *crop,
 	struct v4l2_fract *interval, const char *p, char **endp)
 {
-	struct media_entity_pad *pad;
+	struct media_pad *pad;
 	char *end;
 	int ret;
 
@@ -579,7 +579,7 @@ static struct media_entity_pad *parse_pad_format(struct media_device *media,
 	return pad;
 }
 
-static int set_format(struct media_entity_pad *pad, struct v4l2_mbus_framefmt *format)
+static int set_format(struct media_pad *pad, struct v4l2_mbus_framefmt *format)
 {
 	int ret;
 
@@ -603,7 +603,7 @@ static int set_format(struct media_entity_pad *pad, struct v4l2_mbus_framefmt *f
 	return 0;
 }
 
-static int set_crop(struct media_entity_pad *pad, struct v4l2_rect *crop)
+static int set_crop(struct media_pad *pad, struct v4l2_rect *crop)
 {
 	int ret;
 
@@ -653,7 +653,7 @@ static int set_frame_interval(struct media_entity *entity, struct v4l2_fract *in
 static int setup_format(struct media_device *media, const char *p, char **endp)
 {
 	struct v4l2_mbus_framefmt format = { 0, 0, 0 };
-	struct media_entity_pad *pad;
+	struct media_pad *pad;
 	struct v4l2_rect crop = { -1, -1, -1, -1 };
 	struct v4l2_fract interval = { 0, 0 };
 	unsigned int i;
@@ -692,7 +692,7 @@ static int setup_format(struct media_device *media, const char *p, char **endp)
 	 */
 	if (pad->flags & MEDIA_PAD_FLAG_OUTPUT) {
 		for (i = 0; i < pad->entity->num_links; ++i) {
-			struct media_entity_link *link = &pad->entity->links[i];
+			struct media_link *link = &pad->entity->links[i];
 			struct v4l2_mbus_framefmt remote_format;
 
 			if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
@@ -753,7 +753,7 @@ int main(int argc, char **argv)
 	}
 
 	if (media_opts.pad) {
-		struct media_entity_pad *pad;
+		struct media_pad *pad;
 
 		pad = parse_pad(media, media_opts.pad, NULL);
 		if (pad == NULL) {

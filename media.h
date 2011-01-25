@@ -22,15 +22,15 @@
 
 #include <linux/media.h>
 
-struct media_entity_link {
-	struct media_entity_pad *source;
-	struct media_entity_pad *sink;
-	struct media_entity_link *twin;
+struct media_link {
+	struct media_pad *source;
+	struct media_pad *sink;
+	struct media_link *twin;
 	__u32 flags;
 	__u32 padding[3];
 };
 
-struct media_entity_pad {
+struct media_pad {
 	struct media_entity *entity;
 	__u32 index;
 	__u32 flags;
@@ -39,8 +39,8 @@ struct media_entity_pad {
 
 struct media_entity {
 	struct media_entity_desc info;
-	struct media_entity_pad *pads;
-	struct media_entity_link *links;
+	struct media_pad *pads;
+	struct media_link *links;
 	unsigned int max_links;
 	unsigned int num_links;
 
@@ -59,7 +59,7 @@ struct media_device {
 struct media_device *media_open(const char *name, int verbose);
 void media_close(struct media_device *media);
 
-struct media_entity_pad *media_entity_remote_source(struct media_entity_pad *pad);
+struct media_pad *media_entity_remote_source(struct media_pad *pad);
 
 static inline unsigned int media_entity_type(struct media_entity *entity)
 {
@@ -71,7 +71,7 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
 struct media_entity *media_get_entity_by_id(struct media_device *media,
 	__u32 id);
 int media_setup_link(struct media_device *media,
-	struct media_entity_pad *source, struct media_entity_pad *sink,
+	struct media_pad *source, struct media_pad *sink,
 	__u32 flags);
 int media_reset_links(struct media_device *media);
 

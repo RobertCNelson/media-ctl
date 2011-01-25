@@ -37,7 +37,7 @@
 /*
  * media_entity_remote_pad -
  */
-struct media_entity_pad *media_entity_remote_source(struct media_entity_pad *pad)
+struct media_pad *media_entity_remote_source(struct media_pad *pad)
 {
 	unsigned int i;
 
@@ -45,7 +45,7 @@ struct media_entity_pad *media_entity_remote_source(struct media_entity_pad *pad
 		return NULL;
 
 	for (i = 0; i < pad->entity->num_links; ++i) {
-		struct media_entity_link *link = &pad->entity->links[i];
+		struct media_link *link = &pad->entity->links[i];
 
 		if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
 			continue;
@@ -97,11 +97,11 @@ struct media_entity *media_get_entity_by_id(struct media_device *media,
  * media_setup_link -
  */
 int media_setup_link(struct media_device *media,
-		     struct media_entity_pad *source,
-		     struct media_entity_pad *sink,
+		     struct media_pad *source,
+		     struct media_pad *sink,
 		     __u32 flags)
 {
-	struct media_entity_link *link;
+	struct media_link *link;
 	struct media_link_desc ulink;
 	unsigned int i;
 	int ret;
@@ -153,7 +153,7 @@ int media_reset_links(struct media_device *media)
 		struct media_entity *entity = &media->entities[i];
 
 		for (j = 0; j < entity->num_links; j++) {
-			struct media_entity_link *link = &entity->links[j];
+			struct media_link *link = &entity->links[j];
 
 			if (link->flags & MEDIA_LINK_FLAG_IMMUTABLE ||
 			    link->source->entity != entity)
@@ -169,10 +169,10 @@ int media_reset_links(struct media_device *media)
 	return 0;
 }
 
-static struct media_entity_link *media_entity_add_link(struct media_entity *entity)
+static struct media_link *media_entity_add_link(struct media_entity *entity)
 {
 	if (entity->num_links >= entity->max_links) {
-		struct media_entity_link *links = entity->links;
+		struct media_link *links = entity->links;
 		unsigned int max_links = entity->max_links * 2;
 		unsigned int i;
 
@@ -220,8 +220,8 @@ static int media_enum_links(struct media_device *media)
 
 		for (i = 0; i < entity->info.links; ++i) {
 			struct media_link_desc *link = &links.links[i];
-			struct media_entity_link *fwdlink;
-			struct media_entity_link *backlink;
+			struct media_link *fwdlink;
+			struct media_link *backlink;
 			struct media_entity *source;
 			struct media_entity *sink;
 
