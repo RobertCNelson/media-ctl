@@ -35,11 +35,6 @@
 #include "subdev.h"
 #include "tools.h"
 
-static unsigned int media_entity_type(struct media_entity *entity)
-{
-	return entity->info.type & MEDIA_ENTITY_TYPE_MASK;
-}
-
 static const char *media_entity_type_to_string(unsigned type)
 {
 	static const struct {
