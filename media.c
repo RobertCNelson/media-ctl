@@ -37,18 +37,18 @@
 /*
  * media_entity_remote_pad -
  */
-struct media_entity_pad *media_entity_remote_pad(struct media_entity_pad *pad)
+struct media_entity_pad *media_entity_remote_source(struct media_entity_pad *pad)
 {
 	unsigned int i;
+
+	if (!(pad->flags & MEDIA_PAD_FLAG_INPUT))
+		return NULL;
 
 	for (i = 0; i < pad->entity->info.links; ++i) {
 		struct media_entity_link *link = &pad->entity->links[i];
 
 		if (!(link->flags & MEDIA_LINK_FLAG_ACTIVE))
 			continue;
-
-		if (link->source == pad)
-			return link->sink;
 
 		if (link->sink == pad)
 			return link->source;

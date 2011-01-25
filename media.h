@@ -52,7 +52,7 @@ struct media_device {
 struct media_device *media_open(const char *name, int verbose);
 void media_close(struct media_device *media);
 
-struct media_entity_pad *media_entity_remote_pad(struct media_entity_pad *pad);
+struct media_entity_pad *media_entity_remote_source(struct media_entity_pad *pad);
 
 static inline unsigned int media_entity_type(struct media_entity *entity)
 {
