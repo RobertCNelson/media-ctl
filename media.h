@@ -27,12 +27,14 @@ struct media_entity_link {
 	struct media_entity_pad *sink;
 	struct media_entity_link *twin;
 	__u32 flags;
+	__u32 padding[3];
 };
 
 struct media_entity_pad {
 	struct media_entity *entity;
 	__u32 index;
 	__u32 flags;
+	__u32 padding[3];
 };
 
 struct media_entity {
@@ -44,12 +46,14 @@ struct media_entity {
 
 	char devname[32];
 	int fd;
+	__u32 padding[6];
 };
 
 struct media_device {
 	int fd;
 	struct media_entity *entities;
 	unsigned int entities_count;
+	__u32 padding[6];
 };
 
 struct media_device *media_open(const char *name, int verbose);
