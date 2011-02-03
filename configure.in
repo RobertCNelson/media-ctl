@@ -1,0 +1,61 @@
+AC_PREREQ([2.65])
+AC_INIT([media-ctl], [0.0.1], [laurent.pinchart@ideasonboard.com])
+AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_HEADERS([config.h])
+
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+
+# Checks for programs.
+AC_PROG_CC
+
+# Checks for libraries.
+
+# Kernel headers path.
+AC_ARG_WITH(kernel-headers,
+    [AC_HELP_STRING([--with-kernel-headers=DIR],
+        [specify path of Linux kernel headers [/usr/src/kernel-headers]])],
+    [case "${withval}" in
+        yes | no) AC_MSG_ERROR([bad value ${withval} for --with-kernel-headers]) ;;
+        *)   KERNEL_HEADERS_DIR="${withval}" ;;
+     esac],
+    [KERNEL_HEADERS_DIR="/usr/src/kernel-headers"])
+
+CPPFLAGS="-I$KERNEL_HEADERS_DIR/include"
+
+# Checks for header files.
+AC_CHECK_HEADERS([linux/media.h \
+		  linux/types.h \
+		  linux/v4l2-mediabus.h \
+		  linux/v4l2-subdev.h \
+		  linux/videodev2.h],
+		  [],
+		  [echo "ERROR: Kernel header file not found or not usable!"; exit 1])
+
+AC_CHECK_HEADERS([fcntl.h \
+		  stdlib.h \
+		  string.h \
+		  sys/ioctl.h \
+		  sys/time.h \
+		  unistd.h],
+		  [],
+		  [echo "ERROR: Header file not found or not usable!"; exit 1])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_INLINE
+AC_TYPE_SIZE_T
+AC_CHECK_MEMBERS([struct stat.st_rdev])
+
+# Checks for library functions.
+AC_HEADER_MAJOR
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_CHECK_FUNCS([memset strerror strrchr strtoul])
+
+AC_CONFIG_FILES([
+ Makefile
+ src/Makefile
+])
+
+AC_OUTPUT
+
