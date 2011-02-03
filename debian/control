@@ -1,0 +1,54 @@
+Source: media-ctl
+Priority: extra
+Maintainer: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Build-Depends: debhelper (>= 7.0.50~),
+               kernel-headers (>= 2.6.32-20105003),
+               libtool,
+               autoconf,
+               automake
+Standards-Version: 3.8.4
+Section: utils
+
+Package: libmedia
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: Media controller library
+ This library aims to simplify media controller setup.
+
+Package: libmedia-dev
+Section: libdevel
+Architecture: any
+Depends: libmedia (= ${binary:Version})
+Description: Development headers for media controller library
+ Development headers to be used when developing software which
+ uses media controller library.
+
+Package: libsubdev
+Section: libs
+Architecture: any
+Depends: libmedia,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: V4L2 subdevice library
+ This library aims to simplify setup and use of V4L2 subdevice nodes.
+
+Package: libsubdev-dev
+Section: libdevel
+Architecture: any
+Depends: libsubdev (= ${binary:Version})
+Description: Development headers for V4L2 subdevice library
+ Development headers to be used when developing software which
+ uses V4L2 subdevice library.
+
+Package: media-ctl
+Section: utils
+Architecture: any
+Depends: libmedia,
+         libsubdev,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: Media controller control application
+ media-ctl is an utility for setup of media controller topology.
+

@@ -1,0 +1,4 @@
+usr/include/media.h
+usr/lib/libmedia.a
+usr/lib/libmedia.so
+usr/lib/libmedia.la
