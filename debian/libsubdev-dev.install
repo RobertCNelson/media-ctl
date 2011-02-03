@@ -2,3 +2,4 @@ usr/include/subdev.h
 usr/lib/libsubdev.a
 usr/lib/libsubdev.so
 usr/lib/libsubdev.la
+usr/lib/pkgconfig/libsubdev.pc

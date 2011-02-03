@@ -5,7 +5,8 @@ Build-Depends: debhelper (>= 7.0.50~),
                kernel-headers (>= 2.6.32-20105003),
                libtool,
                autoconf,
-               automake
+               automake,
+               pkg-config
 Standards-Version: 3.8.4
 Section: utils
 
