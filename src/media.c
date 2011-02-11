@@ -225,12 +225,12 @@ static int media_enum_links(struct media_device *media)
 				fwdlink = media_entity_add_link(source);
 				fwdlink->source = &source->pads[link->source.index];
 				fwdlink->sink = &sink->pads[link->sink.index];
-				fwdlink->flags = links.links[i].flags;
+				fwdlink->flags = link->flags;
 
 				backlink = media_entity_add_link(sink);
 				backlink->source = &source->pads[link->source.index];
 				backlink->sink = &sink->pads[link->sink.index];
-				backlink->flags = links.links[i].flags;
+				backlink->flags = link->flags;
 
 				fwdlink->twin = backlink;
 				backlink->twin = fwdlink;
