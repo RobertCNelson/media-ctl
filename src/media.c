@@ -129,6 +129,7 @@ int media_setup_link(struct media_device *media,
 	}
 
 	link->flags = flags;
+	link->twin->flags = flags;
 	return 0;
 }
 
