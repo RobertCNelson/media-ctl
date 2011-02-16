@@ -10,7 +10,7 @@ Build-Depends: debhelper (>= 7.0.50~),
 Standards-Version: 3.8.4
 Section: utils
 
-Package: libmedia
+Package: libmediactl
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends},
@@ -18,27 +18,27 @@ Depends: ${shlibs:Depends},
 Description: Media controller library
  This library aims to simplify media controller setup.
 
-Package: libmedia-dev
+Package: libmediactl-dev
 Section: libdevel
 Architecture: any
-Depends: libmedia (= ${binary:Version})
+Depends: libmediactl (= ${binary:Version})
 Description: Development headers for media controller library
  Development headers to be used when developing software which
  uses media controller library.
 
-Package: libsubdev
+Package: libv4l2subdev
 Section: libs
 Architecture: any
-Depends: libmedia,
+Depends: libmediactl,
          ${shlibs:Depends},
          ${misc:Depends}
 Description: V4L2 subdevice library
  This library aims to simplify setup and use of V4L2 subdevice nodes.
 
-Package: libsubdev-dev
+Package: libv4l2subdev-dev
 Section: libdevel
 Architecture: any
-Depends: libsubdev (= ${binary:Version})
+Depends: libv4l2subdev (= ${binary:Version})
 Description: Development headers for V4L2 subdevice library
  Development headers to be used when developing software which
  uses V4L2 subdevice library.
@@ -46,8 +46,8 @@ Description: Development headers for V4L2 subdevice library
 Package: media-ctl
 Section: utils
 Architecture: any
-Depends: libmedia,
-         libsubdev,
+Depends: libmediactl,
+         libv4l2subdev,
          ${shlibs:Depends},
          ${misc:Depends}
 Description: Media controller control application

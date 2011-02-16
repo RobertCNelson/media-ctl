@@ -1,5 +1,5 @@
 SUBDIRS = src
 ACLOCAL_AMFLAGS = -I m4
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libmedia.pc libsubdev.pc
+pkgconfig_DATA = libmediactl.pc libv4l2subdev.pc
 

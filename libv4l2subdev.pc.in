@@ -3,8 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libmedia
-Description: Media controller library.
+Name: libv4l2subdev
+Description: V4L2 subdevice library.
+Requires: libmediactl
 Version: @PACKAGE_VERSION@
 Cflags: -I${includedir}
-Libs: -L${libdir} -lmedia
+Libs: -L${libdir} -lv4l2subdev
