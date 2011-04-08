@@ -128,8 +128,8 @@ int media_setup_link(struct media_device *media,
 		return ret;
 	}
 
-	link->flags = flags;
-	link->twin->flags = flags;
+	link->flags = ulink.flags;
+	link->twin->flags = ulink.flags;
 	return 0;
 }
 
