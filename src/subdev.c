@@ -51,6 +51,7 @@ int v4l2_subdev_open(struct media_entity *entity)
 void v4l2_subdev_close(struct media_entity *entity)
 {
 	close(entity->fd);
+	entity->fd = -1;
 }
 
 int v4l2_subdev_get_format(struct media_entity *entity,
