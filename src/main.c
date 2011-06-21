@@ -50,6 +50,8 @@ static struct {
 	enum v4l2_mbus_pixelcode code;
 } mbus_formats[] = {
 	{ "Y8", V4L2_MBUS_FMT_Y8_1X8},
+	{ "Y10", V4L2_MBUS_FMT_Y10_1X10 },
+	{ "Y12", V4L2_MBUS_FMT_Y12_1X12 },
 	{ "YUYV", V4L2_MBUS_FMT_YUYV8_1X16 },
 	{ "UYVY", V4L2_MBUS_FMT_UYVY8_1X16 },
 	{ "SBGGR8", V4L2_MBUS_FMT_SBGGR8_1X8 },
