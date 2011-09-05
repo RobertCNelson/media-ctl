@@ -255,7 +255,7 @@ static int media_enum_entities(struct media_device *media)
 	char target[1024];
 	char *p;
 	__u32 id;
-	int ret;
+	int ret = 0;
 
 	for (id = 0; ; id = entity->info.id) {
 		size = (media->entities_count + 1) * sizeof(*media->entities);
@@ -268,9 +268,8 @@ static int media_enum_entities(struct media_device *media)
 
 		ret = ioctl(media->fd, MEDIA_IOC_ENUM_ENTITIES, &entity->info);
 		if (ret < 0) {
-			if (errno == EINVAL)
-				break;
-			return -errno;
+			ret = errno != EINVAL ? -errno : 0;
+			break;
 		}
 
 		/* Number of links (for outbound links) plus number of pads (for
@@ -281,8 +280,10 @@ static int media_enum_entities(struct media_device *media)
 
 		entity->pads = malloc(entity->info.pads * sizeof(*entity->pads));
 		entity->links = malloc(entity->max_links * sizeof(*entity->links));
-		if (entity->pads == NULL || entity->links == NULL)
-			return -ENOMEM;
+		if (entity->pads == NULL || entity->links == NULL) {
+			ret = -ENOMEM;
+			break;
+		}
 
 		media->entities_count++;
 
@@ -316,7 +317,7 @@ static int media_enum_entities(struct media_device *media)
 			strcpy(entity->devname, devname);
 	}
 
-	return 0;
+	return ret;
 }
 
 struct media_device *media_open(const char *name, int verbose)
