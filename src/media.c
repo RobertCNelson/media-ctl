@@ -410,12 +410,11 @@ struct media_device *media_open(const char *name, int verbose)
 	struct media_device *media;
 	int ret;
 
-	media = malloc(sizeof(*media));
+	media = calloc(1, sizeof(*media));
 	if (media == NULL) {
 		printf("%s: unable to allocate memory\n", __func__);
 		return NULL;
 	}
-	memset(media, 0, sizeof(*media));
 
 	if (verbose)
 		printf("Opening media device %s\n", name);
