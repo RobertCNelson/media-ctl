@@ -17,6 +17,8 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  */
 
+#include "config.h"
+
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -245,6 +247,69 @@ static int media_enum_links(struct media_device *media)
 	return ret;
 }
 
+#ifdef HAVE_LIBUDEV
+
+#include <libudev.h>
+
+static inline int media_udev_open(struct udev **udev)
+{
+	*udev = udev_new();
+	if (*udev == NULL)
+		return -ENOMEM;
+	return 0;
+}
+
+static inline void media_udev_close(struct udev *udev)
+{
+	if (udev != NULL)
+		udev_unref(udev);
+}
+
+static int media_get_devname_udev(struct udev *udev,
+		struct media_entity *entity, int verbose)
+{
+	struct udev_device *device;
+	dev_t devnum;
+	const char *p;
+	int ret = -ENODEV;
+
+	if (udev == NULL)
+		return -EINVAL;
+
+	devnum = makedev(entity->info.v4l.major, entity->info.v4l.minor);
+	if (verbose)
+		printf("looking up device: %u:%u\n", major(devnum), minor(devnum));
+	device = udev_device_new_from_devnum(udev, 'c', devnum);
+	if (device) {
+		p = udev_device_get_devnode(device);
+		if (p) {
+			strncpy(entity->devname, p, sizeof(entity->devname));
+			entity->devname[sizeof(entity->devname) - 1] = '\0';
+		}
+		ret = 0;
+	}
+
+	udev_device_unref(device);
+
+	return ret;
+}
+
+#else	/* HAVE_LIBUDEV */
+
+struct udev;
+
+static inline int media_udev_open(struct udev **udev) { return 0; }
+
+static inline void media_udev_close(struct udev *udev) { }
+
+static inline int media_get_devname_udev(struct udev *udev,
+		struct media_entity *entity, int verbose)
+{
+	return -ENOTSUP;
+}
+
+#endif	/* HAVE_LIBUDEV */
+
 static int media_get_devname_sysfs(struct media_entity *entity)
 {
 	struct stat devstat;
@@ -281,14 +346,19 @@ static int media_get_devname_sysfs(struct media_entity *entity)
 	return 0;
 }
 
-static int media_enum_entities(struct media_device *media)
+static int media_enum_entities(struct media_device *media, int verbose)
 {
 	struct media_entity *entity;
+	struct udev *udev;
 	unsigned int size;
 	__u32 id;
-	int ret = 0;
+	int ret;
 
-	for (id = 0; ; id = entity->info.id) {
+	ret = media_udev_open(&udev);
+	if (ret < 0)
+		printf("%s: Can't get udev context\n", __func__);
+
+	for (id = 0, ret = 0; ; id = entity->info.id) {
 		size = (media->entities_count + 1) * sizeof(*media->entities);
 		media->entities = realloc(media->entities, size);
 
@@ -323,9 +393,15 @@ static int media_enum_entities(struct media_device *media)
 		    media_entity_type(entity) != MEDIA_ENT_T_V4L2_SUBDEV)
 			continue;
 
+		/* Try to get the device name via udev */
+		if (!media_get_devname_udev(udev, entity, verbose))
+			continue;
+
+		/* Fall back to get the device name via sysfs */
 		media_get_devname_sysfs(entity);
 	}
 
+	media_udev_close(udev);
 	return ret;
 }
 
@@ -353,7 +429,8 @@ struct media_device *media_open(const char *name, int verbose)
 	if (verbose)
 		printf("Enumerating entities\n");
 
-	ret = media_enum_entities(media);
+	ret = media_enum_entities(media, verbose);
+
 	if (ret < 0) {
 		printf("%s: Unable to enumerate entities for device %s (%s)\n",
 			__func__, name, strerror(-ret));
