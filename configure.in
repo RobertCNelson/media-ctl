@@ -50,8 +50,11 @@ AC_CHECK_MEMBERS([struct stat.st_rdev])
 
 # Checks for library functions.
 AC_HEADER_MAJOR
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
+AS_IF([test "x$cross_compiling" != "xyes"],
+    [
+        AC_FUNC_MALLOC
+        AC_FUNC_REALLOC
+    ])
 AC_CHECK_FUNCS([memset strerror strrchr strtoul])
 
 AC_CONFIG_FILES([
