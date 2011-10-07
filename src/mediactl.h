@@ -1,5 +1,5 @@
 /*
- * Media controller test application
+ * Media controller interface library
  *
  * Copyright (C) 2010 Ideas on board SPRL <laurent.pinchart@ideasonboard.com>
  *

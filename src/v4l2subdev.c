@@ -1,5 +1,5 @@
 /*
- * Media controller test application
+ * V4L2 subdev interface library
  *
  * Copyright (C) 2010 Ideas on board SPRL <laurent.pinchart@ideasonboard.com>
  *
