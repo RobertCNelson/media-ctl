@@ -158,4 +158,41 @@ int v4l2_subdev_get_frame_interval(struct media_entity *entity,
 int v4l2_subdev_set_frame_interval(struct media_entity *entity,
 	struct v4l2_fract *interval);
 
+/**
+ * @brief Parse a string and apply format, crop and frame interval settings.
+ * @param media - media device.
+ * @param p - input string
+ * @param endp - pointer to string p where parsing ended (return)
+ *
+ * Parse string @a p and apply format, crop and frame interval settings to a
+ * subdev pad specified in @a p. @a endp will be written a pointer where
+ * parsing of @a p ended.
+ *
+ * Format strings are separeted by commas (,).
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int v4l2_subdev_parse_setup_formats(struct media_device *media, const char *p);
+
+/**
+ * @brief Convert media bus pixel code to string.
+ * @param code - input string
+ *
+ * Convert media bus pixel code @a code to a human-readable string.
+ *
+ * @return A pointer to a string on success, NULL on failure.
+ */
+const char *v4l2_subdev_pixelcode_to_string(enum v4l2_mbus_pixelcode code);
+
+/**
+ * @brief Parse string to media bus pixel code.
+ * @param string - input string
+ * @param lenght - length of the string
+ *
+ * Parse human readable string @a string to an media bus pixel code.
+ *
+ * @return media bus pixelcode on success, -1 on failure.
+ */
+enum v4l2_mbus_pixelcode v4l2_subdev_string_to_pixelcode(const char *string,
+							 unsigned int length);
 #endif
