@@ -270,7 +270,7 @@ static inline void media_udev_close(struct udev *udev)
 }
 
 static int media_get_devname_udev(struct udev *udev,
-		struct media_entity *entity, int verbose)
+		struct media_entity *entity)
 {
 	struct udev_device *device;
 	dev_t devnum;
@@ -281,9 +281,8 @@ static int media_get_devname_udev(struct udev *udev,
 		return -EINVAL;
 
 	devnum = makedev(entity->info.v4l.major, entity->info.v4l.minor);
-	if (verbose)
-		media_dbg(entity->media, "looking up device: %u:%u\n",
-			  major(devnum), minor(devnum));
+	media_dbg(entity->media, "looking up device: %u:%u\n",
+		  major(devnum), minor(devnum));
 	device = udev_device_new_from_devnum(udev, 'c', devnum);
 	if (device) {
 		p = udev_device_get_devnode(device);
@@ -308,7 +307,7 @@ static inline int media_udev_open(struct udev **udev) { return 0; }
 static inline void media_udev_close(struct udev *udev) { }
 
 static inline int media_get_devname_udev(struct udev *udev,
-		struct media_entity *entity, int verbose)
+		struct media_entity *entity)
 {
 	return -ENOTSUP;
 }
@@ -351,7 +350,7 @@ static int media_get_devname_sysfs(struct media_entity *entity)
 	return 0;
 }
 
-static int media_enum_entities(struct media_device *media, int verbose)
+static int media_enum_entities(struct media_device *media)
 {
 	struct media_entity *entity;
 	struct udev *udev;
@@ -400,7 +399,7 @@ static int media_enum_entities(struct media_device *media, int verbose)
 			continue;
 
 		/* Try to get the device name via udev */
-		if (!media_get_devname_udev(udev, entity, verbose))
+		if (!media_get_devname_udev(udev, entity))
 			continue;
 
 		/* Fall back to get the device name via sysfs */
@@ -429,7 +428,7 @@ void media_debug_set_handler(struct media_device *media,
 }
 
 struct media_device *media_open_debug(
-	const char *name, int verbose, void (*debug_handler)(void *, ...),
+	const char *name, void (*debug_handler)(void *, ...),
 	void *debug_priv)
 {
 	struct media_device *media;
@@ -453,7 +452,7 @@ struct media_device *media_open_debug(
 
 	media_dbg(media, "Enumerating entities\n");
 
-	ret = media_enum_entities(media, verbose);
+	ret = media_enum_entities(media);
 
 	if (ret < 0) {
 		media_dbg(media,
@@ -478,9 +477,9 @@ struct media_device *media_open_debug(
 	return media;
 }
 
-struct media_device *media_open(const char *name, int verbose)
+struct media_device *media_open(const char *name)
 {
-	return media_open_debug(name, verbose, NULL, NULL);
+	return media_open_debug(name, NULL, NULL);
 }
 
 void media_close(struct media_device *media)

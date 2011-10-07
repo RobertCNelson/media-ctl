@@ -288,10 +288,16 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	/* Open the media device and enumerate entities, pads and links. */
-	media = media_open_debug(media_opts.devname, media_opts.verbose,
-				 (void (*)(void *, ...))fprintf, stdout);
-	if (media == NULL)
+	if (media_opts.verbose)
+		media = media_open_debug(
+			media_opts.devname,
+			(void (*)(void *, ...))fprintf, stdout);
+	else
+		media = media_open(media_opts.devname);
+	if (media == NULL) {
+		printf("Failed to open %s\n", media_opts.devname);
 		goto out;
+	}
 
 	if (media_opts.entity) {
 		struct media_entity *entity;
@@ -326,15 +332,34 @@ int main(int argc, char **argv)
 	}
 
 	if (media_opts.reset) {
-		printf("Resetting all links to inactive\n");
-		media_reset_links(media);
+		if (media_opts.verbose)
+			printf("Resetting all links to inactive\n");
+		ret = media_reset_links(media);
+		if (ret) {
+			printf("Unable to reset links: %s (%d)\n",
+			       strerror(-ret), -ret);
+			goto out;
+		}
 	}
 
-	if (media_opts.links)
-		media_parse_setup_links(media, media_opts.links);
+	if (media_opts.links) {
+		ret = media_parse_setup_links(media, media_opts.links);
+		if (ret) {
+			printf("Unable to parse link: %s (%d)\n",
+			       strerror(-ret), -ret);
+			goto out;
+		}
+	}
 
-	if (media_opts.formats)
-		v4l2_subdev_parse_setup_formats(media, media_opts.formats);
+	if (media_opts.formats) {
+		ret = v4l2_subdev_parse_setup_formats(media,
+						      media_opts.formats);
+		if (ret) {
+			printf("Unable to parse format: %s (%d)\n",
+			       strerror(-ret), -ret);
+			goto out;
+		}
+	}
 
 	if (media_opts.interactive) {
 		while (1) {
@@ -348,7 +373,10 @@ int main(int argc, char **argv)
 			if (buffer[0] == '\n')
 				break;
 
-			media_parse_setup_link(media, buffer, &end);
+			ret = media_parse_setup_link(media, buffer, &end);
+			if (ret)
+				printf("Unable to parse link: %s (%d)\n",
+				       strerror(-ret), -ret);
 		}
 	}
 

@@ -79,7 +79,6 @@ void media_debug_set_handler(
 /**
  * @brief Open a media device with debugging enabled.
  * @param name - name (including path) of the device node.
- * @param verbose - whether to print verbose information on the standard output.
  * @param debug_handler - debug message handler
  * @param debug_priv - first argument to debug message handler
  *
@@ -95,13 +94,12 @@ void media_debug_set_handler(
  * media_close when the device isn't needed anymore.
  */
 struct media_device *media_open_debug(
-	const char *name, int verbose, void (*debug_handler)(void *, ...),
+	const char *name, void (*debug_handler)(void *, ...),
 	void *debug_priv);
 
 /**
  * @brief Open a media device.
  * @param name - name (including path) of the device node.
- * @param verbose - whether to print verbose information on the standard output.
  *
  * Open the media device referenced by @a name and enumerate entities, pads and
  * links.
@@ -110,7 +108,7 @@ struct media_device *media_open_debug(
  * success and NULL on failure. The returned pointer must be freed with
  * media_close when the device isn't needed anymore.
  */
-struct media_device *media_open(const char *name, int verbose);
+struct media_device *media_open(const char *name);
 
 /**
  * @brief Close a media device.
