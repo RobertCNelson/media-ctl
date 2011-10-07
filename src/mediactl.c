@@ -372,6 +372,7 @@ static int media_enum_entities(struct media_device *media, int verbose)
 		memset(entity, 0, sizeof(*entity));
 		entity->fd = -1;
 		entity->info.id = id | MEDIA_ENT_ID_FLAG_NEXT;
+		entity->media = media;
 
 		ret = ioctl(media->fd, MEDIA_IOC_ENUM_ENTITIES, &entity->info);
 		if (ret < 0) {

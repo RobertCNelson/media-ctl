@@ -38,6 +38,7 @@ struct media_pad {
 };
 
 struct media_entity {
+	struct media_device *media;
 	struct media_entity_desc info;
 	struct media_pad *pads;
 	struct media_link *links;
