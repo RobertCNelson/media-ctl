@@ -140,7 +140,9 @@ struct media_entity *media_get_entity_by_id(struct media_device *media,
  *
  * Only the MEDIA_LINK_FLAG_ENABLED flag is writable.
  *
- * @return 0 on success, or a negative error code on failure.
+ * @return 0 on success, -1 on failure:
+ *	   -ENOENT: link not found
+ *	   - other error codes returned by MEDIA_IOC_SETUP_LINK
  */
 int media_setup_link(struct media_device *media,
 	struct media_pad *source, struct media_pad *sink,
@@ -156,5 +158,58 @@ int media_setup_link(struct media_device *media,
  * @return 0 on success, or a negative error code on failure.
  */
 int media_reset_links(struct media_device *media);
+
+/**
+ * @brief Parse string to a pad on the media device.
+ * @param media - media device.
+ * @param p - input string
+ * @param endp - pointer to string where parsing ended
+ *
+ * Parse NULL terminated string describing a pad and return its struct
+ * media_pad instance.
+ *
+ * @return Pointer to struct media_pad on success, NULL on failure.
+ */
+struct media_pad *media_parse_pad(struct media_device *media,
+				  const char *p, char **endp);
+
+/**
+ * @brief Parse string to a link on the media device.
+ * @param media - media device.
+ * @param p - input string
+ * @param endp - pointer to p where parsing ended
+ *
+ * Parse NULL terminated string p describing a link and return its struct
+ * media_link instance.
+ *
+ * @return Pointer to struct media_link on success, NULL on failure.
+ */
+struct media_link *media_parse_link(struct media_device *media,
+				    const char *p, char **endp);
+
+/**
+ * @brief Parse string to a link on the media device and set it up.
+ * @param media - media device.
+ * @param p - input string
+ *
+ * Parse NULL terminated string p describing a link and its configuration
+ * and configure the link.
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int media_parse_setup_link(struct media_device *media,
+			   const char *p, char **endp);
+
+/**
+ * @brief Parse string to link(s) on the media device and set it up.
+ * @param media - media device.
+ * @param p - input string
+ *
+ * Parse NULL terminated string p describing link(s) separated by
+ * commas (,) and configure the link(s).
+ *
+ * @return 0 on success, or a negative error code on failure.
+ */
+int media_parse_setup_links(struct media_device *media, const char *p);
 
 #endif

@@ -36,6 +36,12 @@
 #include "mediactl.h"
 #include "tools.h"
 
+#ifdef DEBUG
+#define dprintf(...) printf(__VA_ARGS__)
+#else
+#define dprintf(...)
+#endif
+
 struct media_pad *media_entity_remote_source(struct media_pad *pad)
 {
 	unsigned int i;
@@ -107,8 +113,8 @@ int media_setup_link(struct media_device *media,
 	}
 
 	if (i == source->entity->num_links) {
-		printf("%s: Link not found\n", __func__);
-		return -EINVAL;
+		dprintf("%s: Link not found\n", __func__);
+		return -ENOENT;
 	}
 
 	/* source pad */
@@ -124,10 +130,10 @@ int media_setup_link(struct media_device *media,
 	ulink.flags = flags | (link->flags & MEDIA_LNK_FL_IMMUTABLE);
 
 	ret = ioctl(media->fd, MEDIA_IOC_SETUP_LINK, &ulink);
-	if (ret < 0) {
-		printf("%s: Unable to setup link (%s)\n", __func__,
+	if (ret == -1) {
+		dprintf("%s: Unable to setup link (%s)\n", __func__,
 			strerror(errno));
-		return ret;
+		return -errno;
 	}
 
 	link->flags = ulink.flags;
@@ -196,7 +202,7 @@ static int media_enum_links(struct media_device *media)
 		links.links = malloc(entity->info.links * sizeof(struct media_link_desc));
 
 		if (ioctl(media->fd, MEDIA_IOC_ENUM_LINKS, &links) < 0) {
-			printf("%s: Unable to enumerate pads and links (%s).\n",
+			dprintf("%s: Unable to enumerate pads and links (%s).\n",
 				__func__, strerror(errno));
 			free(links.pads);
 			free(links.links);
@@ -220,7 +226,7 @@ static int media_enum_links(struct media_device *media)
 			sink = media_get_entity_by_id(media, link->sink.entity);
 
 			if (source == NULL || sink == NULL) {
-				printf("WARNING entity %u link %u from %u/%u to %u/%u is invalid!\n",
+				dprintf("WARNING entity %u link %u from %u/%u to %u/%u is invalid!\n",
 					id, i, link->source.entity, link->source.index,
 					link->sink.entity, link->sink.index);
 				ret = -EINVAL;
@@ -412,39 +418,40 @@ struct media_device *media_open(const char *name, int verbose)
 
 	media = calloc(1, sizeof(*media));
 	if (media == NULL) {
-		printf("%s: unable to allocate memory\n", __func__);
+		dprintf("%s: unable to allocate memory\n", __func__);
 		return NULL;
 	}
 
 	if (verbose)
-		printf("Opening media device %s\n", name);
+		dprintf("Opening media device %s\n", name);
+
 	media->fd = open(name, O_RDWR);
 	if (media->fd < 0) {
 		media_close(media);
-		printf("%s: Can't open media device %s\n", __func__, name);
+		dprintf("%s: Can't open media device %s\n", __func__, name);
 		return NULL;
 	}
 
 	if (verbose)
-		printf("Enumerating entities\n");
+		dprintf("Enumerating entities\n");
 
 	ret = media_enum_entities(media, verbose);
 
 	if (ret < 0) {
-		printf("%s: Unable to enumerate entities for device %s (%s)\n",
+		dprintf("%s: Unable to enumerate entities for device %s (%s)\n",
 			__func__, name, strerror(-ret));
 		media_close(media);
 		return NULL;
 	}
 
 	if (verbose) {
-		printf("Found %u entities\n", media->entities_count);
-		printf("Enumerating pads and links\n");
+		dprintf("Found %u entities\n", media->entities_count);
+		dprintf("Enumerating pads and links\n");
 	}
 
 	ret = media_enum_links(media);
 	if (ret < 0) {
-		printf("%s: Unable to enumerate pads and linksfor device %s\n",
+		dprintf("%s: Unable to enumerate pads and linksfor device %s\n",
 			__func__, name);
 		media_close(media);
 		return NULL;
@@ -471,4 +478,134 @@ void media_close(struct media_device *media)
 
 	free(media->entities);
 	free(media);
+}
+
+struct media_pad *media_parse_pad(struct media_device *media,
+				  const char *p, char **endp)
+{
+	unsigned int entity_id, pad;
+	struct media_entity *entity;
+	char *end;
+
+	for (; isspace(*p); ++p);
+
+	if (*p == '"') {
+		for (end = (char *)p + 1; *end && *end != '"'; ++end);
+		if (*end != '"')
+			return NULL;
+
+		entity = media_get_entity_by_name(media, p + 1, end - p - 1);
+		if (entity == NULL)
+			return NULL;
+
+		++end;
+	} else {
+		entity_id = strtoul(p, &end, 10);
+		entity = media_get_entity_by_id(media, entity_id);
+		if (entity == NULL)
+			return NULL;
+	}
+	for (; isspace(*end); ++end);
+
+	if (*end != ':')
+		return NULL;
+	for (p = end + 1; isspace(*p); ++p);
+
+	pad = strtoul(p, &end, 10);
+	for (p = end; isspace(*p); ++p);
+
+	if (pad >= entity->info.pads)
+		return NULL;
+
+	for (p = end; isspace(*p); ++p);
+	if (endp)
+		*endp = (char *)p;
+
+	return &entity->pads[pad];
+}
+
+struct media_link *media_parse_link(struct media_device *media,
+				    const char *p, char **endp)
+{
+	struct media_link *link;
+	struct media_pad *source;
+	struct media_pad *sink;
+	unsigned int i;
+	char *end;
+
+	source = media_parse_pad(media, p, &end);
+	if (source == NULL)
+		return NULL;
+
+	if (end[0] != '-' || end[1] != '>')
+		return NULL;
+	p = end + 2;
+
+	sink = media_parse_pad(media, p, &end);
+	if (sink == NULL)
+		return NULL;
+
+	*endp = end;
+
+	for (i = 0; i < source->entity->num_links; i++) {
+		link = &source->entity->links[i];
+
+		if (link->source == source && link->sink == sink)
+			return link;
+	}
+
+	return NULL;
+}
+
+int media_parse_setup_link(struct media_device *media,
+			   const char *p, char **endp)
+{
+	struct media_link *link;
+	__u32 flags;
+	char *end;
+
+	link = media_parse_link(media, p, &end);
+	if (link == NULL) {
+		dprintf("Unable to parse link\n");
+		return -EINVAL;
+	}
+
+	p = end;
+	if (*p++ != '[') {
+		dprintf("Unable to parse link flags\n");
+		return -EINVAL;
+	}
+
+	flags = strtoul(p, &end, 10);
+	for (p = end; isspace(*p); p++);
+	if (*p++ != ']') {
+		dprintf("Unable to parse link flags\n");
+		return -EINVAL;
+	}
+
+	for (; isspace(*p); p++);
+	*endp = (char *)p;
+
+	dprintf("Setting up link %u:%u -> %u:%u [%u]\n",
+		link->source->entity->info.id, link->source->index,
+		link->sink->entity->info.id, link->sink->index,
+		flags);
+
+	return media_setup_link(media, link->source, link->sink, flags);
+}
+
+int media_parse_setup_links(struct media_device *media, const char *p)
+{
+	char *end;
+	int ret;
+
+	do {
+		ret = media_parse_setup_link(media, p, &end);
+		if (ret < 0)
+			return ret;
+
+		p = end + 1;
+	} while (*end == ',');
+
+	return *end ? -EINVAL : 0;
 }

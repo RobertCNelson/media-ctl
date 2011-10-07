@@ -335,137 +335,6 @@ void media_print_topology(struct media_device *media, int dot)
 }
 
 /* -----------------------------------------------------------------------------
- * Links setup
- */
-
-static struct media_pad *parse_pad(struct media_device *media, const char *p, char **endp)
-{
-	unsigned int entity_id, pad;
-	struct media_entity *entity;
-	char *end;
-
-	for (; isspace(*p); ++p);
-
-	if (*p == '"') {
-		for (end = (char *)p + 1; *end && *end != '"'; ++end);
-		if (*end != '"')
-			return NULL;
-
-		entity = media_get_entity_by_name(media, p + 1, end - p - 1);
-		if (entity == NULL)
-			return NULL;
-
-		++end;
-	} else {
-		entity_id = strtoul(p, &end, 10);
-		entity = media_get_entity_by_id(media, entity_id);
-		if (entity == NULL)
-			return NULL;
-	}
-	for (; isspace(*end); ++end);
-
-	if (*end != ':')
-		return NULL;
-	for (p = end + 1; isspace(*p); ++p);
-
-	pad = strtoul(p, &end, 10);
-	for (p = end; isspace(*p); ++p);
-
-	if (pad >= entity->info.pads)
-		return NULL;
-
-	for (p = end; isspace(*p); ++p);
-	if (endp)
-		*endp = (char *)p;
-
-	return &entity->pads[pad];
-}
-
-static struct media_link *parse_link(struct media_device *media, const char *p, char **endp)
-{
-	struct media_link *link;
-	struct media_pad *source;
-	struct media_pad *sink;
-	unsigned int i;
-	char *end;
-
-	source = parse_pad(media, p, &end);
-	if (source == NULL)
-		return NULL;
-
-	if (end[0] != '-' || end[1] != '>')
-		return NULL;
-	p = end + 2;
-
-	sink = parse_pad(media, p, &end);
-	if (sink == NULL)
-		return NULL;
-
-	*endp = end;
-
-	for (i = 0; i < source->entity->num_links; i++) {
-		link = &source->entity->links[i];
-
-		if (link->source == source && link->sink == sink)
-			return link;
-	}
-
-	return NULL;
-}
-
-static int setup_link(struct media_device *media, const char *p, char **endp)
-{
-	struct media_link *link;
-	__u32 flags;
-	char *end;
-
-	link = parse_link(media, p, &end);
-	if (link == NULL) {
-		printf("Unable to parse link\n");
-		return -EINVAL;
-	}
-
-	p = end;
-	if (*p++ != '[') {
-		printf("Unable to parse link flags\n");
-		return -EINVAL;
-	}
-
-	flags = strtoul(p, &end, 10);
-	for (p = end; isspace(*p); p++);
-	if (*p++ != ']') {
-		printf("Unable to parse link flags\n");
-		return -EINVAL;
-	}
-
-	for (; isspace(*p); p++);
-	*endp = (char *)p;
-
-	printf("Setting up link %u:%u -> %u:%u [%u]\n",
-		link->source->entity->info.id, link->source->index,
-		link->sink->entity->info.id, link->sink->index,
-		flags);
-
-	return media_setup_link(media, link->source, link->sink, flags);
-}
-
-static int setup_links(struct media_device *media, const char *p)
-{
-	char *end;
-	int ret;
-
-	do {
-		ret = setup_link(media, p, &end);
-		if (ret < 0)
-			return ret;
-
-		p = end + 1;
-	} while (*end == ',');
-
-	return *end ? -EINVAL : 0;
-}
-
-/* -----------------------------------------------------------------------------
  * Formats setup
  */
 
@@ -558,7 +427,7 @@ static struct media_pad *parse_pad_format(struct media_device *media,
 
 	for (; isspace(*p); ++p);
 
-	pad = parse_pad(media, p, &end);
+	pad = media_parse_pad(media, p, &end);
 	if (pad == NULL)
 		return NULL;
 
@@ -775,7 +644,7 @@ int main(int argc, char **argv)
 	if (media_opts.pad) {
 		struct media_pad *pad;
 
-		pad = parse_pad(media, media_opts.pad, NULL);
+		pad = media_parse_pad(media, media_opts.pad, NULL);
 		if (pad == NULL) {
 			printf("Pad '%s' not found\n", media_opts.pad);
 			goto out;
@@ -797,7 +666,7 @@ int main(int argc, char **argv)
 	}
 
 	if (media_opts.links)
-		setup_links(media, media_opts.links);
+		media_parse_setup_links(media, media_opts.links);
 
 	if (media_opts.formats)
 		setup_formats(media, media_opts.formats);
@@ -814,7 +683,7 @@ int main(int argc, char **argv)
 			if (buffer[0] == '\n')
 				break;
 
-			setup_link(media, buffer, &end);
+			media_parse_setup_link(media, buffer, &end);
 		}
 	}
 
