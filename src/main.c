@@ -36,9 +36,9 @@
 #include <linux/v4l2-subdev.h>
 #include <linux/videodev2.h>
 
-#include "media.h"
+#include "mediactl.h"
 #include "options.h"
-#include "subdev.h"
+#include "v4l2subdev.h"
 #include "tools.h"
 
 /* -----------------------------------------------------------------------------

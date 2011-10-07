@@ -33,7 +33,7 @@
 #include <linux/videodev2.h>
 #include <linux/media.h>
 
-#include "media.h"
+#include "mediactl.h"
 #include "tools.h"
 
 struct media_pad *media_entity_remote_source(struct media_pad *pad)
@@ -472,4 +472,3 @@ void media_close(struct media_device *media)
 	free(media->entities);
 	free(media);
 }
-

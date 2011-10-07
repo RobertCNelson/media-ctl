@@ -158,4 +158,3 @@ int media_setup_link(struct media_device *media,
 int media_reset_links(struct media_device *media);
 
 #endif
-

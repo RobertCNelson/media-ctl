@@ -159,4 +159,3 @@ int v4l2_subdev_set_frame_interval(struct media_entity *entity,
 	struct v4l2_fract *interval);
 
 #endif
-
