@@ -54,8 +54,49 @@ struct media_device {
 	int fd;
 	struct media_entity *entities;
 	unsigned int entities_count;
+	void (*debug_handler)(void *, ...);
+	void *debug_priv;
 	__u32 padding[6];
 };
+
+#define media_dbg(media, ...) \
+	(media)->debug_handler((media)->debug_priv, __VA_ARGS__)
+
+/**
+ * @brief Set a handler for debug messages.
+ * @param media - device instance.
+ * @param debug_handler - debug message handler
+ * @param debug_priv - first argument to debug message handler
+ *
+ * Set a handler for debug messages that will be called whenever
+ * debugging information is to be printed. The handler expects an
+ * fprintf-like function.
+ */
+void media_debug_set_handler(
+	struct media_device *media, void (*debug_handler)(void *, ...),
+	void *debug_priv);
+
+/**
+ * @brief Open a media device with debugging enabled.
+ * @param name - name (including path) of the device node.
+ * @param verbose - whether to print verbose information on the standard output.
+ * @param debug_handler - debug message handler
+ * @param debug_priv - first argument to debug message handler
+ *
+ * Open the media device referenced by @a name and enumerate entities, pads and
+ * links.
+ *
+ * Calling media_open_debug() instead of media_open() is equivalent to
+ * media_open() and media_debug_set_handler() except that debugging is
+ * also enabled during media_open().
+ *
+ * @return A pointer to a newly allocated media_device structure instance on
+ * success and NULL on failure. The returned pointer must be freed with
+ * media_close when the device isn't needed anymore.
+ */
+struct media_device *media_open_debug(
+	const char *name, int verbose, void (*debug_handler)(void *, ...),
+	void *debug_priv);
 
 /**
  * @brief Open a media device.

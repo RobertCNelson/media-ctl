@@ -288,7 +288,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 
 	/* Open the media device and enumerate entities, pads and links. */
-	media = media_open(media_opts.devname, media_opts.verbose);
+	media = media_open_debug(media_opts.devname, media_opts.verbose,
+				 (void (*)(void *, ...))fprintf, stdout);
 	if (media == NULL)
 		goto out;
 

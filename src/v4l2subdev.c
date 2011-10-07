@@ -40,8 +40,9 @@ int v4l2_subdev_open(struct media_entity *entity)
 
 	entity->fd = open(entity->devname, O_RDWR);
 	if (entity->fd == -1) {
-		printf("%s: Failed to open subdev device node %s\n", __func__,
-			entity->devname);
+		media_dbg(entity->media,
+			  "%s: Failed to open subdev device node %s\n", __func__,
+			  entity->devname);
 		return -errno;
 	}
 
@@ -329,21 +330,25 @@ static int set_format(struct media_pad *pad,
 	if (format->width == 0 || format->height == 0)
 		return 0;
 
-	printf("Setting up format %s %ux%u on pad %s/%u\n",
-	       v4l2_subdev_pixelcode_to_string(format->code),
-	       format->width, format->height,
-	       pad->entity->info.name, pad->index);
+	media_dbg(pad->entity->media,
+		  "Setting up format %s %ux%u on pad %s/%u\n",
+		  v4l2_subdev_pixelcode_to_string(format->code),
+		  format->width, format->height,
+		  pad->entity->info.name, pad->index);
 
 	ret = v4l2_subdev_set_format(pad->entity, format, pad->index,
 				     V4L2_SUBDEV_FORMAT_ACTIVE);
 	if (ret < 0) {
-		printf("Unable to set format: %s (%d)\n", strerror(-ret), ret);
+		media_dbg(pad->entity->media,
+			  "Unable to set format: %s (%d)\n",
+			  strerror(-ret), ret);
 		return ret;
 	}
 
-	printf("Format set: %s %ux%u\n",
-	       v4l2_subdev_pixelcode_to_string(format->code),
-	       format->width, format->height);
+	media_dbg(pad->entity->media,
+		  "Format set: %s %ux%u\n",
+		  v4l2_subdev_pixelcode_to_string(format->code),
+		  format->width, format->height);
 
 	return 0;
 }
@@ -355,19 +360,23 @@ static int set_crop(struct media_pad *pad, struct v4l2_rect *crop)
 	if (crop->left == -1 || crop->top == -1)
 		return 0;
 
-	printf("Setting up crop rectangle (%u,%u)/%ux%u on pad %s/%u\n",
-		crop->left, crop->top, crop->width, crop->height,
-		pad->entity->info.name, pad->index);
+	media_dbg(pad->entity->media,
+		  "Setting up crop rectangle (%u,%u)/%ux%u on pad %s/%u\n",
+		  crop->left, crop->top, crop->width, crop->height,
+		  pad->entity->info.name, pad->index);
 
 	ret = v4l2_subdev_set_crop(pad->entity, crop, pad->index,
 				   V4L2_SUBDEV_FORMAT_ACTIVE);
 	if (ret < 0) {
-		printf("Unable to set crop rectangle: %s (%d)\n", strerror(-ret), ret);
+		media_dbg(pad->entity->media,
+			  "Unable to set crop rectangle: %s (%d)\n",
+			  strerror(-ret), ret);
 		return ret;
 	}
 
-	printf("Crop rectangle set: (%u,%u)/%ux%u\n",
-		crop->left, crop->top, crop->width, crop->height);
+	media_dbg(pad->entity->media,
+		  "Crop rectangle set: (%u,%u)/%ux%u\n",
+		  crop->left, crop->top, crop->width, crop->height);
 
 	return 0;
 }
@@ -380,17 +389,21 @@ static int set_frame_interval(struct media_entity *entity,
 	if (interval->numerator == 0)
 		return 0;
 
-	printf("Setting up frame interval %u/%u on entity %s\n",
-		interval->numerator, interval->denominator, entity->info.name);
+	media_dbg(entity->media,
+		  "Setting up frame interval %u/%u on entity %s\n",
+		  interval->numerator, interval->denominator,
+		  entity->info.name);
 
 	ret = v4l2_subdev_set_frame_interval(entity, interval);
 	if (ret < 0) {
-		printf("Unable to set frame interval: %s (%d)", strerror(-ret), ret);
+		media_dbg(entity->media,
+			  "Unable to set frame interval: %s (%d)",
+			  strerror(-ret), ret);
 		return ret;
 	}
 
-	printf("Frame interval set: %u/%u\n",
-		interval->numerator, interval->denominator);
+	media_dbg(entity->media, "Frame interval set: %u/%u\n",
+		  interval->numerator, interval->denominator);
 
 	return 0;
 }
@@ -410,7 +423,7 @@ static int v4l2_subdev_parse_setup_format(struct media_device *media,
 	pad = v4l2_subdev_parse_pad_format(media, &format, &crop, &interval,
 					   p, &end);
 	if (pad == NULL) {
-		printf("Unable to parse format\n");
+		media_dbg(media, "Unable to parse format\n");
 		return -EINVAL;
 	}
 
