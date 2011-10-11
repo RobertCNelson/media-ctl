@@ -301,6 +301,27 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
+	if (media_opts.print) {
+		printf("Media controller API version %u.%u.%u\n\n",
+		       (media->info.media_version << 16) & 0xff,
+		       (media->info.media_version << 8) & 0xff,
+		       (media->info.media_version << 0) & 0xff);
+		printf("Media device information\n"
+		       "------------------------\n"
+		       "driver          %s\n"
+		       "model           %s\n"
+		       "serial          %s\n"
+		       "bus info        %s\n"
+		       "hw revision     0x%x\n"
+		       "driver version  %u.%u.%u\n\n",
+		       media->info.driver, media->info.model,
+		       media->info.serial, media->info.bus_info,
+		       media->info.hw_revision,
+		       (media->info.driver_version << 16) & 0xff,
+		       (media->info.driver_version << 8) & 0xff,
+		       (media->info.driver_version << 0) & 0xff);
+	}
+
 	if (media_opts.entity) {
 		struct media_entity *entity;
 

@@ -452,6 +452,15 @@ struct media_device *media_open_debug(
 		return NULL;
 	}
 
+	ret = ioctl(media->fd, MEDIA_IOC_DEVICE_INFO, &media->info);
+	if (ret < 0) {
+		media_dbg(media, "%s: Unable to retrieve media device "
+			  "information for device %s (%s)\n", __func__,
+			  name, strerror(errno));
+		media_close(media);
+		return NULL;
+	}
+
 	media_dbg(media, "Enumerating entities\n");
 
 	ret = media_enum_entities(media);

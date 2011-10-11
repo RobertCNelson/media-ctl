@@ -54,6 +54,7 @@ struct media_entity {
 
 struct media_device {
 	int fd;
+	struct media_device_info info;
 	struct media_entity *entities;
 	unsigned int entities_count;
 	void (*debug_handler)(void *, ...);
