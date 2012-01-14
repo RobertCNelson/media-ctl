@@ -26,6 +26,7 @@
 #include <sys/types.h>
 
 #include <unistd.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,12 +84,16 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
 struct media_entity *media_get_entity_by_id(struct media_device *media,
 					    __u32 id)
 {
+	bool next = id & MEDIA_ENT_ID_FLAG_NEXT;
 	unsigned int i;
+
+	id &= ~MEDIA_ENT_ID_FLAG_NEXT;
 
 	for (i = 0; i < media->entities_count; ++i) {
 		struct media_entity *entity = &media->entities[i];
 
-		if (entity->info.id == id)
+		if ((entity->info.id == id && !next) ||
+		    (entity->info.id > id && next))
 			return entity;
 	}
 

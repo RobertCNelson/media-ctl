@@ -164,7 +164,11 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
  * @param media - media device.
  * @param id - entity ID.
  *
- * Search for an entity with an ID equal to @a id.
+ * This function searches for an entity based on its ID using an exact match or
+ * next ID method based on the given @a id. If @a id is ORed with
+ * MEDIA_ENT_ID_FLAG_NEXT, the function will return the entity with the smallest
+ * ID larger than @a id. Otherwise it will return the entity with an ID equal to
+ * @a id.
  *
  * @return A pointer to the entity if found, or NULL otherwise.
  */
