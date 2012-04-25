@@ -63,10 +63,17 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
 {
 	unsigned int i;
 
+	/* A match is impossible if the entity name is longer than the maximum
+	 * size we can get from the kernel.
+	 */
+	if (length >= FIELD_SIZEOF(struct media_entity_desc, name))
+		return NULL;
+
 	for (i = 0; i < media->entities_count; ++i) {
 		struct media_entity *entity = &media->entities[i];
 
-		if (strncmp(entity->info.name, name, length) == 0)
+		if (strncmp(entity->info.name, name, length) == 0 &&
+		    entity->info.name[length] == '\0')
 			return entity;
 	}
 

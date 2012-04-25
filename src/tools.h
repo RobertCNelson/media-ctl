@@ -23,6 +23,7 @@
 #define __TOOLS_H__
 
 #define ARRAY_SIZE(array)	(sizeof(array) / sizeof((array)[0]))
+#define FIELD_SIZEOF(t, f)	(sizeof(((t*)0)->f))
 
 #endif /* __TOOLS_H__ */
 
