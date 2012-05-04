@@ -104,48 +104,83 @@ int v4l2_subdev_set_format(struct media_entity *entity,
 	return 0;
 }
 
-int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
-			 unsigned int pad, enum v4l2_subdev_format_whence which)
+int v4l2_subdev_get_selection(struct media_entity *entity,
+	struct v4l2_rect *rect, unsigned int pad, unsigned int target,
+	enum v4l2_subdev_format_whence which)
 {
-	struct v4l2_subdev_crop crop;
+	union {
+		struct v4l2_subdev_selection sel;
+		struct v4l2_subdev_crop crop;
+	} u;
 	int ret;
 
 	ret = v4l2_subdev_open(entity);
 	if (ret < 0)
 		return ret;
 
-	memset(&crop, 0, sizeof(crop));
-	crop.pad = pad;
-	crop.which = which;
+	memset(&u.sel, 0, sizeof(u.sel));
+	u.sel.pad = pad;
+	u.sel.target = target;
+	u.sel.which = which;
 
-	ret = ioctl(entity->fd, VIDIOC_SUBDEV_G_CROP, &crop);
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_G_SELECTION, &u.sel);
+	if (ret >= 0) {
+		*rect = u.sel.r;
+		return 0;
+	}
+	if (errno != ENOTTY || target != V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL)
+		return -errno;
+
+	memset(&u.crop, 0, sizeof(u.crop));
+	u.crop.pad = pad;
+	u.crop.which = which;
+
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_G_CROP, &u.crop);
 	if (ret < 0)
 		return -errno;
 
-	*rect = crop.rect;
+	*rect = u.crop.rect;
 	return 0;
 }
 
-int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
-			 unsigned int pad, enum v4l2_subdev_format_whence which)
+int v4l2_subdev_set_selection(struct media_entity *entity,
+	struct v4l2_rect *rect, unsigned int pad, unsigned int target,
+	enum v4l2_subdev_format_whence which)
 {
-	struct v4l2_subdev_crop crop;
+	union {
+		struct v4l2_subdev_selection sel;
+		struct v4l2_subdev_crop crop;
+	} u;
 	int ret;
 
 	ret = v4l2_subdev_open(entity);
 	if (ret < 0)
 		return ret;
 
-	memset(&crop, 0, sizeof(crop));
-	crop.pad = pad;
-	crop.which = which;
-	crop.rect = *rect;
+	memset(&u.sel, 0, sizeof(u.sel));
+	u.sel.pad = pad;
+	u.sel.target = target;
+	u.sel.which = which;
+	u.sel.r = *rect;
 
-	ret = ioctl(entity->fd, VIDIOC_SUBDEV_S_CROP, &crop);
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_S_SELECTION, &u.sel);
+	if (ret >= 0) {
+		*rect = u.sel.r;
+		return 0;
+	}
+	if (errno != ENOTTY || target != V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL)
+		return -errno;
+
+	memset(&u.crop, 0, sizeof(u.crop));
+	u.crop.pad = pad;
+	u.crop.which = which;
+	u.crop.rect = *rect;
+
+	ret = ioctl(entity->fd, VIDIOC_SUBDEV_S_CROP, &u.crop);
 	if (ret < 0)
 		return -errno;
 
-	*rect = crop.rect;
+	*rect = u.crop.rect;
 	return 0;
 }
 
@@ -355,30 +390,31 @@ static int set_format(struct media_pad *pad,
 	return 0;
 }
 
-static int set_crop(struct media_pad *pad, struct v4l2_rect *crop)
+static int set_selection(struct media_pad *pad, unsigned int target,
+			 struct v4l2_rect *rect)
 {
 	int ret;
 
-	if (crop->left == -1 || crop->top == -1)
+	if (rect->left == -1 || rect->top == -1)
 		return 0;
 
 	media_dbg(pad->entity->media,
-		  "Setting up crop rectangle (%u,%u)/%ux%u on pad %s/%u\n",
-		  crop->left, crop->top, crop->width, crop->height,
+		  "Setting up selection target %u rectangle (%u,%u)/%ux%u on pad %s/%u\n",
+		  target, rect->left, rect->top, rect->width, rect->height,
 		  pad->entity->info.name, pad->index);
 
-	ret = v4l2_subdev_set_crop(pad->entity, crop, pad->index,
-				   V4L2_SUBDEV_FORMAT_ACTIVE);
+	ret = v4l2_subdev_set_selection(pad->entity, rect, pad->index,
+					target, V4L2_SUBDEV_FORMAT_ACTIVE);
 	if (ret < 0) {
 		media_dbg(pad->entity->media,
-			  "Unable to set crop rectangle: %s (%d)\n",
+			  "Unable to set selection rectangle: %s (%d)\n",
 			  strerror(-ret), ret);
 		return ret;
 	}
 
 	media_dbg(pad->entity->media,
-		  "Crop rectangle set: (%u,%u)/%ux%u\n",
-		  crop->left, crop->top, crop->width, crop->height);
+		  "Selection rectangle set: (%u,%u)/%ux%u\n",
+		  rect->left, rect->top, rect->width, rect->height);
 
 	return 0;
 }
@@ -430,7 +466,7 @@ static int v4l2_subdev_parse_setup_format(struct media_device *media,
 	}
 
 	if (pad->flags & MEDIA_PAD_FL_SOURCE) {
-		ret = set_crop(pad, &crop);
+		ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL, &crop);
 		if (ret < 0)
 			return ret;
 	}
@@ -440,7 +476,7 @@ static int v4l2_subdev_parse_setup_format(struct media_device *media,
 		return ret;
 
 	if (pad->flags & MEDIA_PAD_FL_SINK) {
-		ret = set_crop(pad, &crop);
+		ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL, &crop);
 		if (ret < 0)
 			return ret;
 	}

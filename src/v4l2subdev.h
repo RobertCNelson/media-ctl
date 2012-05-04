@@ -88,34 +88,38 @@ int v4l2_subdev_set_format(struct media_entity *entity,
 	enum v4l2_subdev_format_whence which);
 
 /**
- * @brief Retrieve the crop rectangle on a pad.
+ * @brief Retrieve a selection rectangle on a pad.
  * @param entity - subdev-device media entity.
- * @param rect - crop rectangle to be filled.
+ * @param r - rectangle to be filled.
  * @param pad - pad number.
+ * @param target - selection target
  * @param which - identifier of the format to get.
  *
- * Retrieve the current crop rectangleon the @a entity @a pad and store it in
- * the @a rect structure.
+ * Retrieve the @a target selection rectangle on the @a entity @a pad
+ * and store it in the @a rect structure.
  *
- * @a which is set to V4L2_SUBDEV_FORMAT_TRY to retrieve the try crop rectangle
- * stored in the file handle, of V4L2_SUBDEV_FORMAT_ACTIVE to retrieve the
- * current active crop rectangle.
+ * @a which is set to V4L2_SUBDEV_FORMAT_TRY to retrieve the try
+ * selection rectangle stored in the file handle, or
+ * V4L2_SUBDEV_FORMAT_ACTIVE to retrieve the current active selection
+ * rectangle.
  *
  * @return 0 on success, or a negative error code on failure.
  */
-int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
-	unsigned int pad, enum v4l2_subdev_format_whence which);
+int v4l2_subdev_get_selection(struct media_entity *entity,
+	struct v4l2_rect *rect, unsigned int pad, unsigned int target,
+	enum v4l2_subdev_format_whence which);
 
 /**
- * @brief Set the crop rectangle on a pad.
+ * @brief Set a selection rectangle on a pad.
  * @param entity - subdev-device media entity.
  * @param rect - crop rectangle.
  * @param pad - pad number.
+ * @param target - selection target
  * @param which - identifier of the format to set.
  *
- * Set the crop rectangle on the @a entity @a pad to @a rect. The driver is
- * allowed to modify the requested rectangle, in which case @a rect is updated
- * with the modifications.
+ * Set the @a target selection rectangle on the @a entity @a pad to @a
+ * rect. The driver is allowed to modify the requested rectangle, in
+ * which case @a rect is updated with the modifications.
  *
  * @a which is set to V4L2_SUBDEV_FORMAT_TRY to set the try crop rectangle
  * stored in the file handle, of V4L2_SUBDEV_FORMAT_ACTIVE to configure the
@@ -123,8 +127,9 @@ int v4l2_subdev_get_crop(struct media_entity *entity, struct v4l2_rect *rect,
  *
  * @return 0 on success, or a negative error code on failure.
  */
-int v4l2_subdev_set_crop(struct media_entity *entity, struct v4l2_rect *rect,
-	unsigned int pad, enum v4l2_subdev_format_whence which);
+int v4l2_subdev_set_selection(struct media_entity *entity,
+	struct v4l2_rect *rect, unsigned int pad, unsigned int target,
+	enum v4l2_subdev_format_whence which);
 
 /**
  * @brief Retrieve the frame interval on a sub-device.
