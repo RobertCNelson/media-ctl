@@ -64,28 +64,28 @@ static void v4l2_subdev_print_format(struct media_entity *entity,
 	       format.width, format.height);
 
 	ret = v4l2_subdev_get_selection(entity, &rect, pad,
-					V4L2_SUBDEV_SEL_TGT_CROP_BOUNDS,
+					V4L2_SEL_TGT_CROP_BOUNDS,
 					which);
 	if (ret == 0)
 		printf("\n\t\t crop.bounds:(%u,%u)/%ux%u", rect.left, rect.top,
 		       rect.width, rect.height);
 
 	ret = v4l2_subdev_get_selection(entity, &rect, pad,
-					V4L2_SUBDEV_SEL_TGT_CROP,
+					V4L2_SEL_TGT_CROP,
 					which);
 	if (ret == 0)
 		printf("\n\t\t crop:(%u,%u)/%ux%u", rect.left, rect.top,
 		       rect.width, rect.height);
 
 	ret = v4l2_subdev_get_selection(entity, &rect, pad,
-					V4L2_SUBDEV_SEL_TGT_COMPOSE_BOUNDS,
+					V4L2_SEL_TGT_COMPOSE_BOUNDS,
 					which);
 	if (ret == 0)
 		printf("\n\t\t compose.bounds:(%u,%u)/%ux%u",
 		       rect.left, rect.top, rect.width, rect.height);
 
 	ret = v4l2_subdev_get_selection(entity, &rect, pad,
-					V4L2_SUBDEV_SEL_TGT_COMPOSE,
+					V4L2_SEL_TGT_COMPOSE,
 					which);
 	if (ret == 0)
 		printf("\n\t\t compose:(%u,%u)/%ux%u",

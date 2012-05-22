@@ -129,7 +129,7 @@ int v4l2_subdev_get_selection(struct media_entity *entity,
 		*rect = u.sel.r;
 		return 0;
 	}
-	if (errno != ENOTTY || target != V4L2_SUBDEV_SEL_TGT_CROP)
+	if (errno != ENOTTY || target != V4L2_SEL_TGT_CROP)
 		return -errno;
 
 	memset(&u.crop, 0, sizeof(u.crop));
@@ -169,7 +169,7 @@ int v4l2_subdev_set_selection(struct media_entity *entity,
 		*rect = u.sel.r;
 		return 0;
 	}
-	if (errno != ENOTTY || target != V4L2_SUBDEV_SEL_TGT_CROP)
+	if (errno != ENOTTY || target != V4L2_SEL_TGT_CROP)
 		return -errno;
 
 	memset(&u.crop, 0, sizeof(u.crop));
@@ -519,11 +519,11 @@ static int v4l2_subdev_parse_setup_format(struct media_device *media,
 			return ret;
 	}
 
-	ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_CROP, &crop);
+	ret = set_selection(pad, V4L2_SEL_TGT_CROP, &crop);
 	if (ret < 0)
 		return ret;
 
-	ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_COMPOSE, &compose);
+	ret = set_selection(pad, V4L2_SEL_TGT_COMPOSE, &compose);
 	if (ret < 0)
 		return ret;
 
