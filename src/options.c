@@ -58,11 +58,14 @@ static void usage(const char *argv0, int verbose)
 	printf("\n");
 	printf("\tv4l2            = pad '[' v4l2-properties ']' ;\n");
 	printf("\tv4l2-properties = v4l2-property { ',' v4l2-property } ;\n");
-	printf("\tv4l2-property   = v4l2-mbusfmt | v4l2-crop | v4l2-interval ;\n");
+	printf("\tv4l2-property   = v4l2-mbusfmt | v4l2-crop | v4l2-interval\n");
+	printf("\t                | v4l2-compose | v4l2-interval ;\n");
 	printf("\tv4l2-mbusfmt    = 'fmt:' fcc '/' size ;\n");
-	printf("\tv4l2-crop       = 'crop:' '(' left ',' top ')' '/' size ;\n");
+	printf("\tv4l2-crop       = 'crop:' rectangle ;\n");
+	printf("\tv4l2-compose    = 'compose:' rectangle ;\n");
 	printf("\tv4l2-interval   = '@' numerator '/' denominator ;\n");
 	printf("\n");
+	printf("\trectangle       = '(' left ',' top, ')' '/' size ;\n");
 	printf("\tsize            = width 'x' height ;\n");
 	printf("\n");
 	printf("where the fields are\n");

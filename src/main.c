@@ -77,6 +77,20 @@ static void v4l2_subdev_print_format(struct media_entity *entity,
 		printf("\n\t\t crop:(%u,%u)/%ux%u", rect.left, rect.top,
 		       rect.width, rect.height);
 
+	ret = v4l2_subdev_get_selection(entity, &rect, pad,
+					V4L2_SUBDEV_SEL_TGT_COMPOSE_BOUNDS,
+					which);
+	if (ret == 0)
+		printf("\n\t\t compose.bounds:%u,%u/%ux%u",
+		       rect.left, rect.top, rect.width, rect.height);
+
+	ret = v4l2_subdev_get_selection(entity, &rect, pad,
+					V4L2_SUBDEV_SEL_TGT_COMPOSE_ACTUAL,
+					which);
+	if (ret == 0)
+		printf("\n\t\t compose:%u,%u/%ux%u",
+		       rect.left, rect.top, rect.width, rect.height);
+
 	printf("]\n");
 }
 

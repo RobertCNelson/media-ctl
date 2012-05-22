@@ -331,8 +331,8 @@ static bool strhazit(const char *str, const char **p)
 
 static struct media_pad *v4l2_subdev_parse_pad_format(
 	struct media_device *media, struct v4l2_mbus_framefmt *format,
-	struct v4l2_rect *crop, struct v4l2_fract *interval, const char *p,
-	char **endp)
+	struct v4l2_rect *crop, struct v4l2_rect *compose,
+	struct v4l2_fract *interval, const char *p, char **endp)
 {
 	struct media_pad *pad;
 	bool first;
@@ -375,6 +375,15 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 				return NULL;
 
 			p = end;
+			continue;
+		}
+
+		if (strhazit("compose:", &p)) {
+			ret = v4l2_subdev_parse_rectangle(compose, p, &end);
+			if (ret < 0)
+				return NULL;
+
+			for (p = end; isspace(*p); p++);
 			continue;
 		}
 
@@ -491,30 +500,35 @@ static int v4l2_subdev_parse_setup_format(struct media_device *media,
 	struct v4l2_mbus_framefmt format = { 0, 0, 0 };
 	struct media_pad *pad;
 	struct v4l2_rect crop = { -1, -1, -1, -1 };
+	struct v4l2_rect compose = crop;
 	struct v4l2_fract interval = { 0, 0 };
 	unsigned int i;
 	char *end;
 	int ret;
 
-	pad = v4l2_subdev_parse_pad_format(media, &format, &crop, &interval,
-					   p, &end);
+	pad = v4l2_subdev_parse_pad_format(media, &format, &crop, &compose,
+					   &interval, p, &end);
 	if (pad == NULL) {
 		media_dbg(media, "Unable to parse format\n");
 		return -EINVAL;
 	}
 
-	if (pad->flags & MEDIA_PAD_FL_SOURCE) {
-		ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL, &crop);
+	if (pad->flags & MEDIA_PAD_FL_SINK) {
+		ret = set_format(pad, &format);
 		if (ret < 0)
 			return ret;
 	}
 
-	ret = set_format(pad, &format);
+	ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL, &crop);
 	if (ret < 0)
 		return ret;
 
-	if (pad->flags & MEDIA_PAD_FL_SINK) {
-		ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL, &crop);
+	ret = set_selection(pad, V4L2_SUBDEV_SEL_TGT_COMPOSE_ACTUAL, &compose);
+	if (ret < 0)
+		return ret;
+
+	if (pad->flags & MEDIA_PAD_FL_SOURCE) {
+		ret = set_format(pad, &format);
 		if (ret < 0)
 			return ret;
 	}
