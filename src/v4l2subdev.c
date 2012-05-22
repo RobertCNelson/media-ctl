@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -232,14 +233,19 @@ static int v4l2_subdev_parse_format(struct v4l2_mbus_framefmt *format,
 	unsigned int width, height;
 	char *end;
 
+	/*
+	 * Compatibility with the old syntax: consider space as valid
+	 * separator between the media bus pixel code and the size.
+	 */
 	for (; isspace(*p); ++p);
-	for (end = (char *)p; !isspace(*end) && *end != '\0'; ++end);
+	for (end = (char *)p;
+	     *end != '/' && *end != ' ' && *end != '\0'; ++end);
 
 	code = v4l2_subdev_string_to_pixelcode(p, end - p);
 	if (code == (enum v4l2_mbus_pixelcode)-1)
 		return -EINVAL;
 
-	for (p = end; isspace(*p); ++p);
+	p = end + 1;
 	width = strtoul(p, &end, 10);
 	if (*end != 'x')
 		return -EINVAL;
@@ -256,32 +262,32 @@ static int v4l2_subdev_parse_format(struct v4l2_mbus_framefmt *format,
 	return 0;
 }
 
-static int v4l2_subdev_parse_crop(
-	struct v4l2_rect *crop, const char *p, char **endp)
+static int v4l2_subdev_parse_rectangle(
+	struct v4l2_rect *r, const char *p, char **endp)
 {
 	char *end;
 
 	if (*p++ != '(')
 		return -EINVAL;
 
-	crop->left = strtoul(p, &end, 10);
+	r->left = strtoul(p, &end, 10);
 	if (*end != ',')
 		return -EINVAL;
 
 	p = end + 1;
-	crop->top = strtoul(p, &end, 10);
+	r->top = strtoul(p, &end, 10);
 	if (*end++ != ')')
 		return -EINVAL;
 	if (*end != '/')
 		return -EINVAL;
 
 	p = end + 1;
-	crop->width = strtoul(p, &end, 10);
+	r->width = strtoul(p, &end, 10);
 	if (*end != 'x')
 		return -EINVAL;
 
 	p = end + 1;
-	crop->height = strtoul(p, &end, 10);
+	r->height = strtoul(p, &end, 10);
 	*endp = end;
 
 	return 0;
@@ -307,12 +313,29 @@ static int v4l2_subdev_parse_frame_interval(struct v4l2_fract *interval,
 	return 0;
 }
 
+/*
+ * The debate over whether this function should be named icanhasstr() instead
+ * has been strong and heated. If you feel like this would be an important
+ * change, patches are welcome (or not).
+ */
+static bool strhazit(const char *str, const char **p)
+{
+	int len = strlen(str);
+
+	if (strncmp(str, *p, len))
+		return false;
+
+	for (*p += len; isspace(**p); ++*p);
+	return true;
+}
+
 static struct media_pad *v4l2_subdev_parse_pad_format(
 	struct media_device *media, struct v4l2_mbus_framefmt *format,
 	struct v4l2_rect *crop, struct v4l2_fract *interval, const char *p,
 	char **endp)
 {
 	struct media_pad *pad;
+	bool first;
 	char *end;
 	int ret;
 
@@ -326,30 +349,45 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 	if (*p++ != '[')
 		return NULL;
 
-	for (; isspace(*p); ++p);
+	for (first = true; ; first = false) {
+		for (; isspace(*p); p++);
 
-	if (isalnum(*p)) {
-		ret = v4l2_subdev_parse_format(format, p, &end);
-		if (ret < 0)
-			return NULL;
+		/*
+		 * Backward compatibility: if the first property starts with an
+		 * uppercase later, process it as a format description.
+		 */
+		if (strhazit("fmt:", &p) || (first && isupper(*p))) {
+			ret = v4l2_subdev_parse_format(format, p, &end);
+			if (ret < 0)
+				return NULL;
 
-		for (p = end; isspace(*p); p++);
-	}
+			p = end;
+			continue;
+		}
 
-	if (*p == '(') {
-		ret = v4l2_subdev_parse_crop(crop, p, &end);
-		if (ret < 0)
-			return NULL;
+		/*
+		 * Backward compatibility: crop rectangles can be specified
+		 * implicitly without the 'crop:' property name.
+		 */
+		if (strhazit("crop:", &p) || *p == '(') {
+			ret = v4l2_subdev_parse_rectangle(crop, p, &end);
+			if (ret < 0)
+				return NULL;
 
-		for (p = end; isspace(*p); p++);
-	}
+			p = end;
+			continue;
+		}
 
-	if (*p == '@') {
-		ret = v4l2_subdev_parse_frame_interval(interval, ++p, &end);
-		if (ret < 0)
-			return NULL;
+		if (*p == '@') {
+			ret = v4l2_subdev_parse_frame_interval(interval, ++p, &end);
+			if (ret < 0)
+				return NULL;
 
-		for (p = end; isspace(*p); p++);
+			p = end;
+			continue;
+		}
+
+		break;
 	}
 
 	if (*p != ']')

@@ -59,16 +59,25 @@ static void v4l2_subdev_print_format(struct media_entity *entity,
 	if (ret != 0)
 		return;
 
-	printf("[%s %ux%u", v4l2_subdev_pixelcode_to_string(format.code),
+	printf("\t\t[fmt:%s/%ux%u",
+	       v4l2_subdev_pixelcode_to_string(format.code),
 	       format.width, format.height);
+
+	ret = v4l2_subdev_get_selection(entity, &rect, pad,
+					V4L2_SUBDEV_SEL_TGT_CROP_BOUNDS,
+					which);
+	if (ret == 0)
+		printf("\n\t\t crop.bounds:(%u,%u)/%ux%u", rect.left, rect.top,
+		       rect.width, rect.height);
 
 	ret = v4l2_subdev_get_selection(entity, &rect, pad,
 					V4L2_SUBDEV_SEL_TGT_CROP_ACTUAL,
 					which);
 	if (ret == 0)
-		printf(" (%u,%u)/%ux%u", rect.left, rect.top,
+		printf("\n\t\t crop:(%u,%u)/%ux%u", rect.left, rect.top,
 		       rect.width, rect.height);
-	printf("]");
+
+	printf("]\n");
 }
 
 static const char *media_entity_type_to_string(unsigned type)
@@ -252,12 +261,10 @@ static void media_print_topology_text(struct media_device *media)
 		for (j = 0; j < entity->info.pads; j++) {
 			struct media_pad *pad = &entity->pads[j];
 
-			printf("\tpad%u: %s ", j, media_pad_type_to_string(pad->flags));
+			printf("\tpad%u: %s\n", j, media_pad_type_to_string(pad->flags));
 
 			if (media_entity_type(entity) == MEDIA_ENT_T_V4L2_SUBDEV)
 				v4l2_subdev_print_format(entity, j, V4L2_SUBDEV_FORMAT_ACTIVE);
-
-			printf("\n");
 
 			for (k = 0; k < entity->num_links; k++) {
 				struct media_link *link = &entity->links[k];
@@ -364,7 +371,6 @@ int main(int argc, char **argv)
 
 		v4l2_subdev_print_format(pad->entity, pad->index,
 					 V4L2_SUBDEV_FORMAT_ACTIVE);
-		printf("\n");
 	}
 
 	if (media_opts.print || media_opts.print_dot) {

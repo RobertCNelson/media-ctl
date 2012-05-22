@@ -37,8 +37,8 @@ static void usage(const char *argv0, int verbose)
 	printf("%s [options] device\n", argv0);
 	printf("-d, --device dev	Media device name (default: %s)\n", MEDIA_DEVNAME_DEFAULT);
 	printf("-e, --entity name	Print the device name associated with the given entity\n");
-	printf("-f, --set-format	Comma-separated list of formats to setup\n");
-	printf("    --get-format pad	Print the active format on a given pad\n");
+	printf("-V, --set-v4l2 v4l2	Comma-separated list of formats to setup\n");
+	printf("    --get-v4l2 pad	Print the active format on a given pad\n");
 	printf("-h, --help		Show verbose help and exit\n");
 	printf("-i, --interactive	Modify links interactively\n");
 	printf("-l, --links		Comma-separated list of links descriptors to setup\n");
@@ -53,16 +53,22 @@ static void usage(const char *argv0, int verbose)
 	printf("\n");
 	printf("Links and formats are defined as\n");
 	printf("\tlink            = pad '->' pad '[' flags ']' ;\n");
-	printf("\tformat          = pad '[' fcc ' ' size [ ' ' crop ] [ ' ' '@' frame interval ] ']' ;\n");
-	printf("\tpad             = entity ':' pad number ;\n");
-	printf("\tentity          = entity number | ( '\"' entity name '\"' ) ;\n");
+	printf("\tpad             = entity ':' pad-number ;\n");
+	printf("\tentity          = entity-number | ( '\"' entity-name '\"' ) ;\n");
+	printf("\n");
+	printf("\tv4l2            = pad '[' v4l2-properties ']' ;\n");
+	printf("\tv4l2-properties = v4l2-property { ',' v4l2-property } ;\n");
+	printf("\tv4l2-property   = v4l2-mbusfmt | v4l2-crop | v4l2-interval ;\n");
+	printf("\tv4l2-mbusfmt    = 'fmt:' fcc '/' size ;\n");
+	printf("\tv4l2-crop       = 'crop:' '(' left ',' top ')' '/' size ;\n");
+	printf("\tv4l2-interval   = '@' numerator '/' denominator ;\n");
+	printf("\n");
 	printf("\tsize            = width 'x' height ;\n");
-	printf("\tcrop            = '(' left ',' top ')' '/' size ;\n");
-	printf("\tframe interval  = numerator '/' denominator ;\n");
+	printf("\n");
 	printf("where the fields are\n");
-	printf("\tentity number   Entity numeric identifier\n");
-	printf("\tentity name     Entity name (string) \n");
-	printf("\tpad number      Pad numeric identifier\n");
+	printf("\tentity-number   Entity numeric identifier\n");
+	printf("\tentity-name     Entity name (string) \n");
+	printf("\tpad-number      Pad numeric identifier\n");
 	printf("\tflags           Link flags (0: inactive, 1: active)\n");
 	printf("\tfcc             Format FourCC\n");
 	printf("\twidth           Image width in pixels\n");
@@ -78,7 +84,9 @@ static struct option opts[] = {
 	{"device", 1, 0, 'd'},
 	{"entity", 1, 0, 'e'},
 	{"set-format", 1, 0, 'f'},
+	{"set-v4l2", 1, 0, 'V'},
 	{"get-format", 1, 0, OPT_GET_FORMAT},
+	{"get-v4l2", 1, 0, OPT_GET_FORMAT},
 	{"help", 0, 0, 'h'},
 	{"interactive", 0, 0, 'i'},
 	{"links", 1, 0, 'l'},
@@ -98,7 +106,7 @@ int parse_cmdline(int argc, char **argv)
 	}
 
 	/* parse options */
-	while ((opt = getopt_long(argc, argv, "d:e:f:hil:prv", opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "d:e:f:hil:prvV:", opts, NULL)) != -1) {
 		switch (opt) {
 		case 'd':
 			media_opts.devname = optarg;
@@ -108,7 +116,13 @@ int parse_cmdline(int argc, char **argv)
 			media_opts.entity = optarg;
 			break;
 
+		/* 'f' is supported for backward compatibility reasons and will
+		 * be removed later.
+		 */
 		case 'f':
+			fprintf(stderr, "Warning: the -f option is deprecated "
+				"and has been replaced by -V.\n");
+		case 'V':
 			media_opts.formats = optarg;
 			break;
 
