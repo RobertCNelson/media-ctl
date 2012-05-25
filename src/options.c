@@ -52,13 +52,13 @@ static void usage(const char *argv0, int verbose)
 
 	printf("\n");
 	printf("Links and formats are defined as\n");
-	printf("\tlink            = pad, '->', pad, '[', flags, ']' ;\n");
-	printf("\tformat          = pad, '[', fcc, ' ', size, [ ' ', crop ], [ ' ', '@', frame interval ], ']' ;\n");
-	printf("\tpad             = entity, ':', pad number ;\n");
-	printf("\tentity          = entity number | ( '\"', entity name, '\"' ) ;\n");
-	printf("\tsize            = width, 'x', height ;\n");
-	printf("\tcrop            = '(', left, ',', top, ')', '/', size ;\n");
-	printf("\tframe interval  = numerator, '/', denominator ;\n");
+	printf("\tlink            = pad '->' pad '[' flags ']' ;\n");
+	printf("\tformat          = pad '[' fcc ' ' size [ ' ' crop ] [ ' ' '@' frame interval ] ']' ;\n");
+	printf("\tpad             = entity ':' pad number ;\n");
+	printf("\tentity          = entity number | ( '\"' entity name '\"' ) ;\n");
+	printf("\tsize            = width 'x' height ;\n");
+	printf("\tcrop            = '(' left ',' top ')' '/' size ;\n");
+	printf("\tframe interval  = numerator '/' denominator ;\n");
 	printf("where the fields are\n");
 	printf("\tentity number   Entity numeric identifier\n");
 	printf("\tentity name     Entity name (string) \n");
