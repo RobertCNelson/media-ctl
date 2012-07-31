@@ -52,20 +52,7 @@ struct media_entity {
 	__u32 padding[6];
 };
 
-struct media_device {
-	int fd;
-	int refcount;
-	char *devnode;
-	struct media_device_info info;
-	struct media_entity *entities;
-	unsigned int entities_count;
-	void (*debug_handler)(void *, ...);
-	void *debug_priv;
-	__u32 padding[6];
-};
-
-#define media_dbg(media, ...) \
-	(media)->debug_handler((media)->debug_priv, __VA_ARGS__)
+struct media_device;
 
 /**
  * @brief Create a new media device.
@@ -182,6 +169,53 @@ struct media_entity *media_get_entity_by_name(struct media_device *media,
  */
 struct media_entity *media_get_entity_by_id(struct media_device *media,
 	__u32 id);
+
+/**
+ * @brief Get the number of entities
+ * @param media - media device.
+ *
+ * This function returns the total number of entities in the media device. If
+ * entities haven't been enumerated yet it will return 0.
+ *
+ * @return The number of entities in the media device
+ */
+unsigned int media_get_entities_count(struct media_device *media);
+
+/**
+ * @brief Get the entities
+ * @param media - media device.
+ *
+ * This function returns a pointer to the array of entities for the media
+ * device. If entities haven't been enumerated yet it will return NULL.
+ *
+ * The array of entities is owned by the media device object and will be freed
+ * when the media object is destroyed.
+ *
+ * @return A pointer to an array of entities
+ */
+struct media_entity *media_get_entities(struct media_device *media);
+
+/**
+ * @brief Get the media device information
+ * @param media - media device.
+ *
+ * The information structure is owned by the media device object and will be freed
+ * when the media object is destroyed.
+ *
+ * @return A pointer to the media device information
+ */
+const struct media_device_info *media_get_info(struct media_device *media);
+
+/**
+ * @brief Get the media device node name
+ * @param media - media device.
+ *
+ * The device node name string is owned by the media device object and will be
+ * freed when the media object is destroyed.
+ *
+ * @return A pointer to the media device node name
+ */
+const char *media_get_devnode(struct media_device *media);
 
 /**
  * @brief Configure a link.

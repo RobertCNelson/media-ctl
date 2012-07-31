@@ -171,13 +171,15 @@ static const char *media_pad_type_to_string(unsigned flag)
 
 static void media_print_topology_dot(struct media_device *media)
 {
+	struct media_entity *entities = media_get_entities(media);
+	unsigned int nents = media_get_entities_count(media);
 	unsigned int i, j;
 
 	printf("digraph board {\n");
 	printf("\trankdir=TB\n");
 
-	for (i = 0; i < media->entities_count; ++i) {
-		struct media_entity *entity = &media->entities[i];
+	for (i = 0; i < nents; ++i) {
+		struct media_entity *entity = &entities[i];
 		unsigned int npads;
 
 		switch (media_entity_type(entity)) {
@@ -254,13 +256,15 @@ static void media_print_topology_text(struct media_device *media)
 		{ MEDIA_LNK_FL_DYNAMIC, "DYNAMIC" },
 	};
 
+	struct media_entity *entities = media_get_entities(media);
+	unsigned int nents = media_get_entities_count(media);
 	unsigned int i, j, k;
 	unsigned int padding;
 
 	printf("Device topology\n");
 
-	for (i = 0; i < media->entities_count; ++i) {
-		struct media_entity *entity = &media->entities[i];
+	for (i = 0; i < nents; ++i) {
+		struct media_entity *entity = &entities[i];
 
 		padding = printf("- entity %u: ", entity->info.id);
 		printf("%s (%u pad%s, %u link%s)\n", entity->info.name,
@@ -347,10 +351,12 @@ int main(int argc, char **argv)
 	}
 
 	if (media_opts.print) {
+		const struct media_device_info *info = media_get_info(media);
+
 		printf("Media controller API version %u.%u.%u\n\n",
-		       (media->info.media_version << 16) & 0xff,
-		       (media->info.media_version << 8) & 0xff,
-		       (media->info.media_version << 0) & 0xff);
+		       (info->media_version << 16) & 0xff,
+		       (info->media_version << 8) & 0xff,
+		       (info->media_version << 0) & 0xff);
 		printf("Media device information\n"
 		       "------------------------\n"
 		       "driver          %s\n"
@@ -359,12 +365,12 @@ int main(int argc, char **argv)
 		       "bus info        %s\n"
 		       "hw revision     0x%x\n"
 		       "driver version  %u.%u.%u\n\n",
-		       media->info.driver, media->info.model,
-		       media->info.serial, media->info.bus_info,
-		       media->info.hw_revision,
-		       (media->info.driver_version << 16) & 0xff,
-		       (media->info.driver_version << 8) & 0xff,
-		       (media->info.driver_version << 0) & 0xff);
+		       info->driver, info->model,
+		       info->serial, info->bus_info,
+		       info->hw_revision,
+		       (info->driver_version << 16) & 0xff,
+		       (info->driver_version << 8) & 0xff,
+		       (info->driver_version << 0) & 0xff);
 	}
 
 	if (media_opts.entity) {

@@ -38,7 +38,12 @@
 #include <linux/videodev2.h>
 
 #include "mediactl.h"
+#include "mediactl-priv.h"
 #include "tools.h"
+
+/* -----------------------------------------------------------------------------
+ * Graph access
+ */
 
 struct media_pad *media_entity_remote_source(struct media_pad *pad)
 {
@@ -99,6 +104,26 @@ struct media_entity *media_get_entity_by_id(struct media_device *media,
 	}
 
 	return NULL;
+}
+
+unsigned int media_get_entities_count(struct media_device *media)
+{
+	return media->entities_count;
+}
+
+struct media_entity *media_get_entities(struct media_device *media)
+{
+	return media->entities;
+}
+
+const struct media_device_info *media_get_info(struct media_device *media)
+{
+	return &media->info;
+}
+
+const char *media_get_devnode(struct media_device *media)
+{
+	return media->devnode;
 }
 
 /* -----------------------------------------------------------------------------
@@ -221,6 +246,10 @@ int media_reset_links(struct media_device *media)
 
 	return 0;
 }
+
+/* -----------------------------------------------------------------------------
+ * Entities, pads and links enumeration
+ */
 
 static struct media_link *media_entity_add_link(struct media_entity *entity)
 {
