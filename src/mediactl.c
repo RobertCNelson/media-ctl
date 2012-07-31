@@ -101,6 +101,42 @@ struct media_entity *media_get_entity_by_id(struct media_device *media,
 	return NULL;
 }
 
+/* -----------------------------------------------------------------------------
+ * Open/close
+ */
+
+static int media_device_open(struct media_device *media)
+{
+	int ret;
+
+	if (media->fd != -1)
+		return 0;
+
+	media_dbg(media, "Opening media device %s\n", media->devnode);
+
+	media->fd = open(media->devnode, O_RDWR);
+	if (media->fd < 0) {
+		ret = -errno;
+		media_dbg(media, "%s: Can't open media device %s\n",
+			  __func__, media->devnode);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void media_device_close(struct media_device *media)
+{
+	if (media->fd != -1) {
+		close(media->fd);
+		media->fd = -1;
+	}
+}
+
+/* -----------------------------------------------------------------------------
+ * Link setup
+ */
+
 int media_setup_link(struct media_device *media,
 		     struct media_pad *source,
 		     struct media_pad *sink,
@@ -110,6 +146,10 @@ int media_setup_link(struct media_device *media,
 	struct media_link_desc ulink;
 	unsigned int i;
 	int ret;
+
+	ret = media_device_open(media);
+	if (ret < 0)
+		goto done;
 
 	for (i = 0; i < source->entity->num_links; i++) {
 		link = &source->entity->links[i];
@@ -123,7 +163,8 @@ int media_setup_link(struct media_device *media,
 
 	if (i == source->entity->num_links) {
 		media_dbg(media, "%s: Link not found\n", __func__);
-		return -ENOENT;
+		ret = -ENOENT;
+		goto done;
 	}
 
 	/* source pad */
@@ -143,12 +184,17 @@ int media_setup_link(struct media_device *media,
 		ret = -errno;
 		media_dbg(media, "%s: Unable to setup link (%s)\n",
 			  __func__, strerror(errno));
-		return ret;
+		goto done;
 	}
 
 	link->flags = ulink.flags;
 	link->twin->flags = ulink.flags;
-	return 0;
+
+	ret = 0;
+
+done:
+	media_device_close(media);
+	return ret;
 }
 
 int media_reset_links(struct media_device *media)
@@ -427,6 +473,58 @@ static int media_enum_entities(struct media_device *media)
 	return ret;
 }
 
+int media_device_enumerate(struct media_device *media)
+{
+	int ret;
+
+	if (media->entities)
+		return 0;
+
+	ret = media_device_open(media);
+	if (ret < 0)
+		return ret;
+
+	ret = ioctl(media->fd, MEDIA_IOC_DEVICE_INFO, &media->info);
+	if (ret < 0) {
+		ret = -errno;
+		media_dbg(media, "%s: Unable to retrieve media device "
+			  "information for device %s (%s)\n", __func__,
+			  media->devnode, strerror(errno));
+		goto done;
+	}
+
+	media_dbg(media, "Enumerating entities\n");
+
+	ret = media_enum_entities(media);
+	if (ret < 0) {
+		media_dbg(media,
+			  "%s: Unable to enumerate entities for device %s (%s)\n",
+			  __func__, media->devnode, strerror(-ret));
+		goto done;
+	}
+
+	media_dbg(media, "Found %u entities\n", media->entities_count);
+	media_dbg(media, "Enumerating pads and links\n");
+
+	ret = media_enum_links(media);
+	if (ret < 0) {
+		media_dbg(media,
+			  "%s: Unable to enumerate pads and linksfor device %s\n",
+			  __func__, media->devnode);
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	media_device_close(media);
+	return ret;
+}
+
+/* -----------------------------------------------------------------------------
+ * Create/destroy
+ */
+
 static void media_debug_default(void *ptr, ...)
 {
 }
@@ -444,9 +542,7 @@ void media_debug_set_handler(struct media_device *media,
 	}
 }
 
-struct media_device *media_open_debug(
-	const char *name, void (*debug_handler)(void *, ...),
-	void *debug_priv)
+struct media_device *media_device_new(const char *devnode)
 {
 	struct media_device *media;
 	int ret;
@@ -455,65 +551,33 @@ struct media_device *media_open_debug(
 	if (media == NULL)
 		return NULL;
 
-	media_debug_set_handler(media, debug_handler, debug_priv);
+	media->fd = -1;
+	media->refcount = 1;
 
-	media_dbg(media, "Opening media device %s\n", name);
+	media_debug_set_handler(media, NULL, NULL);
 
-	media->fd = open(name, O_RDWR);
-	if (media->fd < 0) {
-		media_close(media);
-		media_dbg(media, "%s: Can't open media device %s\n",
-			  __func__, name);
-		return NULL;
-	}
-
-	ret = ioctl(media->fd, MEDIA_IOC_DEVICE_INFO, &media->info);
-	if (ret < 0) {
-		media_dbg(media, "%s: Unable to retrieve media device "
-			  "information for device %s (%s)\n", __func__,
-			  name, strerror(errno));
-		media_close(media);
-		return NULL;
-	}
-
-	media_dbg(media, "Enumerating entities\n");
-
-	ret = media_enum_entities(media);
-
-	if (ret < 0) {
-		media_dbg(media,
-			  "%s: Unable to enumerate entities for device %s (%s)\n",
-			  __func__, name, strerror(-ret));
-		media_close(media);
-		return NULL;
-	}
-
-	media_dbg(media, "Found %u entities\n", media->entities_count);
-	media_dbg(media, "Enumerating pads and links\n");
-
-	ret = media_enum_links(media);
-	if (ret < 0) {
-		media_dbg(media,
-			  "%s: Unable to enumerate pads and linksfor device %s\n",
-			  __func__, name);
-		media_close(media);
+	media->devnode = strdup(devnode);
+	if (media->devnode == NULL) {
+		media_device_unref(media);
 		return NULL;
 	}
 
 	return media;
 }
 
-struct media_device *media_open(const char *name)
+struct media_device *media_device_ref(struct media_device *media)
 {
-	return media_open_debug(name, NULL, NULL);
+	media->refcount++;
+	return media;
 }
 
-void media_close(struct media_device *media)
+void media_device_unref(struct media_device *media)
 {
 	unsigned int i;
 
-	if (media->fd != -1)
-		close(media->fd);
+	media->refcount--;
+	if (media->refcount > 0)
+		return;
 
 	for (i = 0; i < media->entities_count; ++i) {
 		struct media_entity *entity = &media->entities[i];
@@ -525,8 +589,13 @@ void media_close(struct media_device *media)
 	}
 
 	free(media->entities);
+	free(media->devnode);
 	free(media);
 }
+
+/* -----------------------------------------------------------------------------
+ * Parsing
+ */
 
 struct media_pad *media_parse_pad(struct media_device *media,
 				  const char *p, char **endp)

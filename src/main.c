@@ -329,15 +329,20 @@ int main(int argc, char **argv)
 	if (parse_cmdline(argc, argv))
 		return EXIT_FAILURE;
 
-	/* Open the media device and enumerate entities, pads and links. */
-	if (media_opts.verbose)
-		media = media_open_debug(
-			media_opts.devname,
-			(void (*)(void *, ...))fprintf, stdout);
-	else
-		media = media_open(media_opts.devname);
+	media = media_device_new(media_opts.devname);
 	if (media == NULL) {
-		printf("Failed to open %s\n", media_opts.devname);
+		printf("Failed to create media device\n");
+		goto out;
+	}
+
+	if (media_opts.verbose)
+		media_debug_set_handler(media,
+			(void (*)(void *, ...))fprintf, stdout);
+
+	/* Enumerate entities, pads and links. */
+	ret = media_device_enumerate(media);
+	if (ret < 0) {
+		printf("Failed to enumerate %s (%d)\n", media_opts.devname, ret);
 		goto out;
 	}
 
@@ -446,7 +451,7 @@ int main(int argc, char **argv)
 
 out:
 	if (media)
-		media_close(media);
+		media_device_unref(media);
 
 	return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }

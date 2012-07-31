@@ -54,6 +54,8 @@ struct media_entity {
 
 struct media_device {
 	int fd;
+	int refcount;
+	char *devnode;
 	struct media_device_info info;
 	struct media_entity *entities;
 	unsigned int entities_count;
@@ -64,6 +66,44 @@ struct media_device {
 
 #define media_dbg(media, ...) \
 	(media)->debug_handler((media)->debug_priv, __VA_ARGS__)
+
+/**
+ * @brief Create a new media device.
+ * @param devnode - device node path.
+ *
+ * Create a media device instance for the given device node and return it. The
+ * device node is not accessed by this function, device node access errors will
+ * not be caught and reported here. The media device needs to be enumerated
+ * before it can be accessed, see media_device_enumerate().
+ *
+ * Media devices are reference-counted, see media_device_ref() and
+ * media_device_unref() for more information.
+ *
+ * @return A pointer to the new media device or NULL if memory cannot be
+ * allocated.
+ */
+struct media_device *media_device_new(const char *devnode);
+
+/**
+ * @brief Take a reference to the device.
+ * @param media - device instance.
+ *
+ * Media devices are reference-counted. Taking a reference to a device prevents
+ * it from being freed until all references are released. The reference count is
+ * initialized to 1 when the device is created.
+ *
+ * @return A pointer to @a media.
+ */
+struct media_device *media_device_ref(struct media_device *media);
+
+/**
+ * @brief Release a reference to the device.
+ * @param media - device instance.
+ *
+ * Release a reference to the media device. When the reference count reaches 0
+ * this function frees the device.
+ */
+void media_device_unref(struct media_device *media);
 
 /**
  * @brief Set a handler for debug messages.
@@ -80,47 +120,15 @@ void media_debug_set_handler(
 	void *debug_priv);
 
 /**
- * @brief Open a media device with debugging enabled.
- * @param name - name (including path) of the device node.
- * @param debug_handler - debug message handler
- * @param debug_priv - first argument to debug message handler
- *
- * Open the media device referenced by @a name and enumerate entities, pads and
- * links.
- *
- * Calling media_open_debug() instead of media_open() is equivalent to
- * media_open() and media_debug_set_handler() except that debugging is
- * also enabled during media_open().
- *
- * @return A pointer to a newly allocated media_device structure instance on
- * success and NULL on failure. The returned pointer must be freed with
- * media_close when the device isn't needed anymore.
- */
-struct media_device *media_open_debug(
-	const char *name, void (*debug_handler)(void *, ...),
-	void *debug_priv);
-
-/**
- * @brief Open a media device.
- * @param name - name (including path) of the device node.
- *
- * Open the media device referenced by @a name and enumerate entities, pads and
- * links.
- *
- * @return A pointer to a newly allocated media_device structure instance on
- * success and NULL on failure. The returned pointer must be freed with
- * media_close when the device isn't needed anymore.
- */
-struct media_device *media_open(const char *name);
-
-/**
- * @brief Close a media device.
+ * @brief Enumerate the device topology
  * @param media - device instance.
  *
- * Close the @a media device instance and free allocated resources. Access to the
- * device instance is forbidden after this function returns.
+ * Enumerate the media device entities, pads and links. Calling this function is
+ * mandatory before accessing the media device contents.
+ *
+ * @return Zero on success or a negative error code on failure.
  */
-void media_close(struct media_device *media);
+int media_device_enumerate(struct media_device *media);
 
 /**
  * @brief Locate the pad at the other end of a link.
