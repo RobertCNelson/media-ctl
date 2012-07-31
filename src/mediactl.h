@@ -244,6 +244,25 @@ unsigned int media_get_entities_count(struct media_device *media);
 struct media_entity *media_get_entity(struct media_device *media, unsigned int index);
 
 /**
+ * @brief Get the default entity for a given type
+ * @param media - media device.
+ * @param type - entity type.
+ *
+ * This function returns the default entity of the requested type. @a type must
+ * be one of
+ *
+ *	MEDIA_ENT_T_DEVNODE_V4L
+ *	MEDIA_ENT_T_DEVNODE_FB
+ *	MEDIA_ENT_T_DEVNODE_ALSA
+ *	MEDIA_ENT_T_DEVNODE_DVB
+ *
+ * @return A pointer to the default entity for the type if it exists, or NULL
+ * otherwise.
+ */
+struct media_entity *media_get_default_entity(struct media_device *media,
+					      unsigned int type);
+
+/**
  * @brief Get the media device information
  * @param media - media device.
  *

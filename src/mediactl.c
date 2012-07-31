@@ -145,6 +145,21 @@ const char *media_entity_get_devname(struct media_entity *entity)
 	return entity->devname[0] ? entity->devname : NULL;
 }
 
+struct media_entity *media_get_default_entity(struct media_device *media,
+					      unsigned int type)
+{
+	switch (type) {
+	case MEDIA_ENT_T_DEVNODE_V4L:
+		return media->def.v4l;
+	case MEDIA_ENT_T_DEVNODE_FB:
+		return media->def.fb;
+	case MEDIA_ENT_T_DEVNODE_ALSA:
+		return media->def.alsa;
+	case MEDIA_ENT_T_DEVNODE_DVB:
+		return media->def.dvb;
+	}
+}
+
 const struct media_device_info *media_get_info(struct media_device *media)
 {
 	return &media->info;
@@ -518,6 +533,23 @@ static int media_enum_entities(struct media_device *media)
 		}
 
 		media->entities_count++;
+
+		if (entity->info.flags & MEDIA_ENT_FL_DEFAULT) {
+			switch (entity->info.type) {
+			case MEDIA_ENT_T_DEVNODE_V4L:
+				media->def.v4l = entity;
+				break;
+			case MEDIA_ENT_T_DEVNODE_FB:
+				media->def.fb = entity;
+				break;
+			case MEDIA_ENT_T_DEVNODE_ALSA:
+				media->def.alsa = entity;
+				break;
+			case MEDIA_ENT_T_DEVNODE_DVB:
+				media->def.dvb = entity;
+				break;
+			}
+		}
 
 		/* Find the corresponding device name. */
 		if (media_entity_type(entity) != MEDIA_ENT_T_DEVNODE &&

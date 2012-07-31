@@ -49,6 +49,13 @@ struct media_device {
 
 	void (*debug_handler)(void *, ...);
 	void *debug_priv;
+
+	struct {
+		struct media_entity *v4l;
+		struct media_entity *fb;
+		struct media_entity *alsa;
+		struct media_entity *dvb;
+	} def;
 };
 
 #define media_dbg(media, ...) \
