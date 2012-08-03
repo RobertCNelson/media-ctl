@@ -60,6 +60,22 @@ struct media_entity;
 struct media_device *media_device_new(const char *devnode);
 
 /**
+ * @brief Create a new emulated media device.
+ * @param info - device information.
+ *
+ * Emulated media devices are userspace-only objects not backed by a kernel
+ * media device. They are created for ALSA and V4L2 devices that are not
+ * associated with a media controller device.
+ *
+ * Only device query functions are available for media devices. Enumerating or
+ * setting up links is invalid.
+ *
+ * @return A pointer to the new media device or NULL if memory cannot be
+ * allocated.
+ */
+struct media_device *media_device_new_emulated(struct media_device_info *info);
+
+/**
  * @brief Take a reference to the device.
  * @param media - device instance.
  *
@@ -79,6 +95,42 @@ struct media_device *media_device_ref(struct media_device *media);
  * this function frees the device.
  */
 void media_device_unref(struct media_device *media);
+
+/**
+ * @brief Add an entity to an existing media device
+ * @param media - device instance.
+ * @param desc - description of the entity to be added
+ * @param devnode - device node corresponding to the entity
+ *
+ * Entities are usually created and added to media devices automatically when
+ * the media device is enumerated through the media controller API. However,
+ * when an emulated media device (thus not backed with a kernel-side media
+ * controller device) is created, entities need to be manually added.
+ *
+ * Entities can also be manually added to a successfully enumerated media device
+ * to group several functions provided by separate kernel devices. The most
+ * common use case is to group the audio and video functions of a USB webcam in
+ * a single media device. Those functions are exposed through separate USB
+ * interfaces and handled through unrelated kernel drivers, they must thus be
+ * manually added to the same media device.
+ *
+ * This function adds a new entity to the given media device and initializes it
+ * from the given entity description and device node name. Only the following
+ * fields of the description are copied over to the new entity:
+ *
+ * - type
+ * - flags (MEDIA_ENT_FL_DEFAULT only)
+ * - name
+ * - v4l, fb, alsa or dvb (depending on the device type)
+ *
+ * All other fields of the newly created entity id are initialized to 0,
+ * including the entity ID.
+ *
+ * @return Zero on success or -ENOMEM if memory cannot be allocated.
+ */
+int media_device_add_entity(struct media_device *media,
+			    const struct media_entity_desc *desc,
+			    const char *devnode);
 
 /**
  * @brief Set a handler for debug messages.

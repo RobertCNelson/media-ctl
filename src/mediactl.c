@@ -637,7 +637,7 @@ void media_debug_set_handler(struct media_device *media,
 	}
 }
 
-struct media_device *media_device_new(const char *devnode)
+static struct media_device *__media_device_new(void)
 {
 	struct media_device *media;
 	int ret;
@@ -651,11 +651,36 @@ struct media_device *media_device_new(const char *devnode)
 
 	media_debug_set_handler(media, NULL, NULL);
 
+	return media;
+}
+
+struct media_device *media_device_new(const char *devnode)
+{
+	struct media_device *media;
+	int ret;
+
+	media = __media_device_new();
+	if (media == NULL)
+		return NULL;
+
 	media->devnode = strdup(devnode);
 	if (media->devnode == NULL) {
 		media_device_unref(media);
 		return NULL;
 	}
+
+	return media;
+}
+
+struct media_device *media_device_new_emulated(struct media_device_info *info)
+{
+	struct media_device *media;
+
+	media = __media_device_new();
+	if (media == NULL)
+		return NULL;
+
+	media->info = *info;
 
 	return media;
 }
@@ -688,9 +713,61 @@ void media_device_unref(struct media_device *media)
 	free(media);
 }
 
-/* -----------------------------------------------------------------------------
- * Parsing
- */
+int media_device_add_entity(struct media_device *media,
+			    const struct media_entity_desc *desc,
+			    const char *devnode)
+{
+	struct media_entity **defent;
+	struct media_entity *entity;
+	unsigned int size;
+
+	size = (media->entities_count + 1) * sizeof(*media->entities);
+	entity = realloc(media->entities, size);
+	if (entity == NULL)
+		return -ENOMEM;
+
+	media->entities = entity;
+	media->entities_count++;
+
+	entity = &media->entities[media->entities_count - 1];
+	memset(entity, 0, sizeof *entity);
+
+	entity->fd = -1;
+	entity->media = media;
+	strncpy(entity->devname, devnode, sizeof entity->devname);
+	entity->devname[sizeof entity->devname - 1] = '\0';
+
+	entity->info.id = 0;
+	entity->info.type = desc->type;
+	entity->info.flags = 0;
+	memcpy(entity->info.name, desc->name, sizeof entity->info.name);
+
+	switch (entity->info.type) {
+	case MEDIA_ENT_T_DEVNODE_V4L:
+		defent = &media->def.v4l;
+		entity->info.v4l = desc->v4l;
+		break;
+	case MEDIA_ENT_T_DEVNODE_FB:
+		defent = &media->def.fb;
+		entity->info.fb = desc->fb;
+		break;
+	case MEDIA_ENT_T_DEVNODE_ALSA:
+		defent = &media->def.alsa;
+		entity->info.alsa = desc->alsa;
+		break;
+	case MEDIA_ENT_T_DEVNODE_DVB:
+		defent = &media->def.dvb;
+		entity->info.dvb = desc->dvb;
+		break;
+	}
+
+	if (desc->flags & MEDIA_ENT_FL_DEFAULT) {
+		entity->info.flags |= MEDIA_ENT_FL_DEFAULT;
+		*defent = entity;
+	}
+
+	return 0;
+}
 
 struct media_pad *media_parse_pad(struct media_device *media,
 				  const char *p, char **endp)
