@@ -266,9 +266,10 @@ static void media_print_topology_text(struct media_device *media)
 		printf("%s (%u pad%s, %u link%s)\n", entity->info.name,
 			entity->info.pads, entity->info.pads > 1 ? "s" : "",
 			entity->num_links, entity->num_links > 1 ? "s" : "");
-		printf("%*ctype %s subtype %s\n", padding, ' ',
+		printf("%*ctype %s subtype %s flags %x\n", padding, ' ',
 			media_entity_type_to_string(entity->info.type),
-			media_entity_subtype_to_string(entity->info.type));
+			media_entity_subtype_to_string(entity->info.type),
+			entity->info.flags);
 		if (entity->devname[0])
 			printf("%*cdevice node name %s\n", padding, ' ', entity->devname);
 
