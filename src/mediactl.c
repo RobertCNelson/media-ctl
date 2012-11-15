@@ -206,8 +206,8 @@ static int media_enum_links(struct media_device *media)
 		unsigned int i;
 
 		links.entity = entity->info.id;
-		links.pads = malloc(entity->info.pads * sizeof(struct media_pad_desc));
-		links.links = malloc(entity->info.links * sizeof(struct media_link_desc));
+		links.pads = calloc(entity->info.pads, sizeof(struct media_pad_desc));
+		links.links = calloc(entity->info.links, sizeof(struct media_link_desc));
 
 		if (ioctl(media->fd, MEDIA_IOC_ENUM_LINKS, &links) < 0) {
 			media_dbg(media,
