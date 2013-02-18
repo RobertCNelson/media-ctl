@@ -48,7 +48,7 @@ AC_ARG_WITH(kernel-headers,
      esac],
     [KERNEL_HEADERS_DIR="/usr/src/kernel-headers"])
 
-CPPFLAGS="-I$KERNEL_HEADERS_DIR/include"
+CPPFLAGS="$CPPFLAGS -I$KERNEL_HEADERS_DIR/include"
 
 # Checks for header files.
 AC_CHECK_HEADERS([linux/media.h \
