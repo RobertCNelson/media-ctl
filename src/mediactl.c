@@ -25,16 +25,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <unistd.h>
 
-#include <linux/videodev2.h>
 #include <linux/media.h>
+#include <linux/videodev2.h>
 
 #include "mediactl.h"
 #include "tools.h"

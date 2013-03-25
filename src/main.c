@@ -19,10 +19,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -33,16 +33,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <linux/types.h>
 #include <linux/media.h>
+#include <linux/types.h>
 #include <linux/v4l2-mediabus.h>
 #include <linux/v4l2-subdev.h>
 #include <linux/videodev2.h>
 
 #include "mediactl.h"
 #include "options.h"
-#include "v4l2subdev.h"
 #include "tools.h"
+#include "v4l2subdev.h"
 
 /* -----------------------------------------------------------------------------
  * Printing
