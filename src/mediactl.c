@@ -537,31 +537,42 @@ struct media_pad *media_parse_pad(struct media_device *media,
 
 	if (*p == '"') {
 		for (end = (char *)p + 1; *end && *end != '"'; ++end);
-		if (*end != '"')
+		if (*end != '"') {
+			media_dbg(media, "missing matching '\"'\n");
 			return NULL;
+		}
 
 		entity = media_get_entity_by_name(media, p + 1, end - p - 1);
-		if (entity == NULL)
+		if (entity == NULL) {
+			media_dbg(media, "no such entity \"%.*s\"\n", end - p - 1, p + 1);
 			return NULL;
+		}
 
 		++end;
 	} else {
 		entity_id = strtoul(p, &end, 10);
 		entity = media_get_entity_by_id(media, entity_id);
-		if (entity == NULL)
+		if (entity == NULL) {
+			media_dbg(media, "no such entity %d\n", entity_id);
 			return NULL;
+		}
 	}
 	for (; isspace(*end); ++end);
 
-	if (*end != ':')
+	if (*end != ':') {
+		media_dbg(media, "Expected ':'\n", *end);
 		return NULL;
+	}
+
 	for (p = end + 1; isspace(*p); ++p);
 
 	pad = strtoul(p, &end, 10);
-	for (p = end; isspace(*p); ++p);
 
-	if (pad >= entity->info.pads)
+	if (pad >= entity->info.pads) {
+		media_dbg(media, "No pad '%d' on entity \"%s\". Maximum pad number is %d\n",
+				pad, entity->info.name, entity->info.pads - 1);
 		return NULL;
+	}
 
 	for (p = end; isspace(*p); ++p);
 	if (endp)
@@ -583,8 +594,11 @@ struct media_link *media_parse_link(struct media_device *media,
 	if (source == NULL)
 		return NULL;
 
-	if (end[0] != '-' || end[1] != '>')
+	if (end[0] != '-' || end[1] != '>') {
+		media_dbg(media, "Expected '->'\n");
 		return NULL;
+	}
+
 	p = end + 2;
 
 	sink = media_parse_pad(media, p, &end);
@@ -600,6 +614,9 @@ struct media_link *media_parse_link(struct media_device *media,
 			return link;
 	}
 
+	media_dbg(media, "No link between \"%s\":%d and \"%s\":%d\n",
+			source->entity->info.name, source->index,
+			sink->entity->info.name, sink->index);
 	return NULL;
 }
 
@@ -619,14 +636,14 @@ int media_parse_setup_link(struct media_device *media,
 
 	p = end;
 	if (*p++ != '[') {
-		media_dbg(media, "Unable to parse link flags\n");
+		media_dbg(media, "Unable to parse link flags: expected '['.\n");
 		return -EINVAL;
 	}
 
 	flags = strtoul(p, &end, 10);
 	for (p = end; isspace(*p); p++);
 	if (*p++ != ']') {
-		media_dbg(media, "Unable to parse link flags\n");
+		media_dbg(media, "Unable to parse link flags: expected ']'.\n");
 		return -EINVAL;
 	}
 
