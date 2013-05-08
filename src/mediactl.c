@@ -533,18 +533,26 @@ struct media_pad *media_parse_pad(struct media_device *media,
 	struct media_entity *entity;
 	char *end;
 
+	/* endp can be NULL. To avoid spreading NULL checks across the function,
+	 * set endp to &end in that case.
+	 */
+	if (endp == NULL)
+		endp = &end;
+
 	for (; isspace(*p); ++p);
 
 	if (*p == '"') {
 		for (end = (char *)p + 1; *end && *end != '"'; ++end);
 		if (*end != '"') {
 			media_dbg(media, "missing matching '\"'\n");
+			*endp = end;
 			return NULL;
 		}
 
 		entity = media_get_entity_by_name(media, p + 1, end - p - 1);
 		if (entity == NULL) {
 			media_dbg(media, "no such entity \"%.*s\"\n", end - p - 1, p + 1);
+			*endp = (char *)p + 1;
 			return NULL;
 		}
 
@@ -554,6 +562,7 @@ struct media_pad *media_parse_pad(struct media_device *media,
 		entity = media_get_entity_by_id(media, entity_id);
 		if (entity == NULL) {
 			media_dbg(media, "no such entity %d\n", entity_id);
+			*endp = (char *)p;
 			return NULL;
 		}
 	}
@@ -561,6 +570,7 @@ struct media_pad *media_parse_pad(struct media_device *media,
 
 	if (*end != ':') {
 		media_dbg(media, "Expected ':'\n", *end);
+		*endp = end;
 		return NULL;
 	}
 
@@ -571,12 +581,12 @@ struct media_pad *media_parse_pad(struct media_device *media,
 	if (pad >= entity->info.pads) {
 		media_dbg(media, "No pad '%d' on entity \"%s\". Maximum pad number is %d\n",
 				pad, entity->info.name, entity->info.pads - 1);
+		*endp = (char *)p;
 		return NULL;
 	}
 
 	for (p = end; isspace(*p); ++p);
-	if (endp)
-		*endp = (char *)p;
+	*endp = (char *)p;
 
 	return &entity->pads[pad];
 }
@@ -591,10 +601,13 @@ struct media_link *media_parse_link(struct media_device *media,
 	char *end;
 
 	source = media_parse_pad(media, p, &end);
-	if (source == NULL)
+	if (source == NULL) {
+		*endp = end;
 		return NULL;
+	}
 
 	if (end[0] != '-' || end[1] != '>') {
+		*endp = end;
 		media_dbg(media, "Expected '->'\n");
 		return NULL;
 	}
@@ -602,8 +615,10 @@ struct media_link *media_parse_link(struct media_device *media,
 	p = end + 2;
 
 	sink = media_parse_pad(media, p, &end);
-	if (sink == NULL)
+	if (sink == NULL) {
+		*endp = end;
 		return NULL;
+	}
 
 	*endp = end;
 
@@ -631,12 +646,14 @@ int media_parse_setup_link(struct media_device *media,
 	if (link == NULL) {
 		media_dbg(media,
 			  "%s: Unable to parse link\n", __func__);
+		*endp = end;
 		return -EINVAL;
 	}
 
 	p = end;
 	if (*p++ != '[') {
 		media_dbg(media, "Unable to parse link flags: expected '['.\n");
+		*endp = (char *)p - 1;
 		return -EINVAL;
 	}
 
@@ -644,6 +661,7 @@ int media_parse_setup_link(struct media_device *media,
 	for (p = end; isspace(*p); p++);
 	if (*p++ != ']') {
 		media_dbg(media, "Unable to parse link flags: expected ']'.\n");
+		*endp = (char *)p - 1;
 		return -EINVAL;
 	}
 
@@ -659,6 +677,23 @@ int media_parse_setup_link(struct media_device *media,
 	return media_setup_link(media, link->source, link->sink, flags);
 }
 
+static void media_print_streampos(struct media_device *media, const char *p,
+				  const char *end)
+{
+	int pos;
+
+	pos = end - p + 1;
+
+	if (pos < 0)
+		pos = 0;
+	if (pos > strlen(p))
+		pos = strlen(p);
+
+	media_dbg(media, "\n");
+	media_dbg(media, " %s\n", p);
+	media_dbg(media, " %*s\n", pos, "^");
+}
+
 int media_parse_setup_links(struct media_device *media, const char *p)
 {
 	char *end;
@@ -666,8 +701,10 @@ int media_parse_setup_links(struct media_device *media, const char *p)
 
 	do {
 		ret = media_parse_setup_link(media, p, &end);
-		if (ret < 0)
+		if (ret < 0) {
+			media_print_streampos(media, p, end);
 			return ret;
+		}
 
 		p = end + 1;
 	} while (*end == ',');
