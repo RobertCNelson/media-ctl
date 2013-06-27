@@ -652,6 +652,8 @@ static struct {
 	{ "SGBRG12", V4L2_MBUS_FMT_SGBRG12_1X12 },
 	{ "SGRBG12", V4L2_MBUS_FMT_SGRBG12_1X12 },
 	{ "SRGGB12", V4L2_MBUS_FMT_SRGGB12_1X12 },
+	{ "AYUV32", V4L2_MBUS_FMT_AYUV8_1X32 },
+	{ "ARGB32", V4L2_MBUS_FMT_ARGB8888_1X32 },
 };
 
 const char *v4l2_subdev_pixelcode_to_string(enum v4l2_mbus_pixelcode code)
