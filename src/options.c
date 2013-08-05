@@ -42,8 +42,8 @@ static void usage(const char *argv0, int verbose)
 	printf("-h, --help		Show verbose help and exit\n");
 	printf("-i, --interactive	Modify links interactively\n");
 	printf("-l, --links		Comma-separated list of links descriptors to setup\n");
-	printf("-p, --print-topology	Print the device topology (implies -v)\n");
-	printf("    --print-dot		Print the device topology as a dot graph (implies -v)\n");
+	printf("-p, --print-topology	Print the device topology\n");
+	printf("    --print-dot		Print the device topology as a dot graph\n");
 	printf("-r, --reset		Reset all links to inactive\n");
 	printf("-v, --verbose		Be verbose\n");
 
@@ -143,7 +143,6 @@ int parse_cmdline(int argc, char **argv)
 
 		case 'p':
 			media_opts.print = 1;
-			media_opts.verbose = 1;
 			break;
 
 		case 'r':
