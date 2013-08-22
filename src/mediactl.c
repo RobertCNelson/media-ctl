@@ -541,9 +541,9 @@ struct media_pad *media_parse_pad(struct media_device *media,
 
 	for (; isspace(*p); ++p);
 
-	if (*p == '"') {
-		for (end = (char *)p + 1; *end && *end != '"'; ++end);
-		if (*end != '"') {
+	if (*p == '"' || *p == '\'') {
+		for (end = (char *)p + 1; *end && *end != '"' && *end != '\''; ++end);
+		if (*end != '"' && *end != '\'') {
 			media_dbg(media, "missing matching '\"'\n");
 			*endp = end;
 			return NULL;
