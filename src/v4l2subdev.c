@@ -277,12 +277,14 @@ static int v4l2_subdev_parse_rectangle(struct media_device *media,
 
 	if (*p++ != '(') {
 		media_dbg(media, "Expected '('\n");
+		*endp = (char *)p - 1;
 		return -EINVAL;
 	}
 
 	r->left = strtoul(p, &end, 10);
 	if (*end != ',') {
 		media_dbg(media, "Expected ','\n");
+		*endp = end;
 		return -EINVAL;
 	}
 
@@ -290,10 +292,12 @@ static int v4l2_subdev_parse_rectangle(struct media_device *media,
 	r->top = strtoul(p, &end, 10);
 	if (*end++ != ')') {
 		media_dbg(media, "Expected ')'\n");
+		*endp = end - 1;
 		return -EINVAL;
 	}
 	if (*end != '/') {
 		media_dbg(media, "Expected '/'\n");
+		*endp = end;
 		return -EINVAL;
 	}
 
@@ -301,6 +305,7 @@ static int v4l2_subdev_parse_rectangle(struct media_device *media,
 	r->width = strtoul(p, &end, 10);
 	if (*end != 'x') {
 		media_dbg(media, "Expected 'x'\n");
+		*endp = end;
 		return -EINVAL;
 	}
 
@@ -324,6 +329,7 @@ static int v4l2_subdev_parse_frame_interval(struct media_device *media,
 	for (p = end; isspace(*p); ++p);
 	if (*p++ != '/') {
 		media_dbg(media, "Expected '/'\n");
+		*endp = (char *)p - 1;
 		return -EINVAL;
 	}
 
@@ -363,12 +369,15 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 	for (; isspace(*p); ++p);
 
 	pad = media_parse_pad(media, p, &end);
-	if (pad == NULL)
+	if (pad == NULL) {
+		*endp = end;
 		return NULL;
+	}
 
 	for (p = end; isspace(*p); ++p);
 	if (*p++ != '[') {
 		media_dbg(media, "Expected '['\n");
+		*endp = (char *)p - 1;
 		return NULL;
 	}
 
@@ -380,9 +389,11 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 		 * uppercase later, process it as a format description.
 		 */
 		if (strhazit("fmt:", &p) || (first && isupper(*p))) {
-			ret = v4l2_subdev_parse_format(format, p, &end);
-			if (ret < 0)
+			ret = v4l2_subdev_parse_format(media, format, p, &end);
+			if (ret < 0) {
+				*endp = end;
 				return NULL;
+			}
 
 			p = end;
 			continue;
@@ -393,27 +404,33 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 		 * implicitly without the 'crop:' property name.
 		 */
 		if (strhazit("crop:", &p) || *p == '(') {
-			ret = v4l2_subdev_parse_rectangle(crop, p, &end);
-			if (ret < 0)
+			ret = v4l2_subdev_parse_rectangle(media, crop, p, &end);
+			if (ret < 0) {
+				*endp = end;
 				return NULL;
+			}
 
 			p = end;
 			continue;
 		}
 
 		if (strhazit("compose:", &p)) {
-			ret = v4l2_subdev_parse_rectangle(compose, p, &end);
-			if (ret < 0)
+			ret = v4l2_subdev_parse_rectangle(media, compose, p, &end);
+			if (ret < 0) {
+				*endp = end;
 				return NULL;
+			}
 
 			for (p = end; isspace(*p); p++);
 			continue;
 		}
 
 		if (*p == '@') {
-			ret = v4l2_subdev_parse_frame_interval(interval, ++p, &end);
-			if (ret < 0)
+			ret = v4l2_subdev_parse_frame_interval(media, interval, ++p, &end);
+			if (ret < 0) {
+				*endp = end;
 				return NULL;
+			}
 
 			p = end;
 			continue;
@@ -424,6 +441,7 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 
 	if (*p != ']') {
 		media_dbg(media, "Expected ']'\n");
+		*endp = (char *)p;
 		return NULL;
 	}
 
@@ -534,6 +552,7 @@ static int v4l2_subdev_parse_setup_format(struct media_device *media,
 	pad = v4l2_subdev_parse_pad_format(media, &format, &crop, &compose,
 					   &interval, p, &end);
 	if (pad == NULL) {
+		media_print_streampos(media, p, end);
 		media_dbg(media, "Unable to parse format\n");
 		return -EINVAL;
 	}

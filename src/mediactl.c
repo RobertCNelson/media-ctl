@@ -677,8 +677,8 @@ int media_parse_setup_link(struct media_device *media,
 	return media_setup_link(media, link->source, link->sink, flags);
 }
 
-static void media_print_streampos(struct media_device *media, const char *p,
-				  const char *end)
+void media_print_streampos(struct media_device *media, const char *p,
+			   const char *end)
 {
 	int pos;
 
