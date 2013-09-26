@@ -417,7 +417,7 @@ int main(int argc, char **argv)
 		ret = v4l2_subdev_parse_setup_formats(media,
 						      media_opts.formats);
 		if (ret) {
-			printf("Unable to parse format: %s (%d)\n",
+			printf("Unable to setup formats: %s (%d)\n",
 			       strerror(-ret), -ret);
 			goto out;
 		}

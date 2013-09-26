@@ -228,7 +228,8 @@ int v4l2_subdev_set_frame_interval(struct media_entity *entity,
 	return 0;
 }
 
-static int v4l2_subdev_parse_format(struct v4l2_mbus_framefmt *format,
+static int v4l2_subdev_parse_format(struct media_device *media,
+				    struct v4l2_mbus_framefmt *format,
 				    const char *p, char **endp)
 {
 	enum v4l2_mbus_pixelcode code;
@@ -244,13 +245,17 @@ static int v4l2_subdev_parse_format(struct v4l2_mbus_framefmt *format,
 	     *end != '/' && *end != ' ' && *end != '\0'; ++end);
 
 	code = v4l2_subdev_string_to_pixelcode(p, end - p);
-	if (code == (enum v4l2_mbus_pixelcode)-1)
+	if (code == (enum v4l2_mbus_pixelcode)-1) {
+		media_dbg(media, "Invalid pixel code '%.*s'\n", end - p, p);
 		return -EINVAL;
+	}
 
 	p = end + 1;
 	width = strtoul(p, &end, 10);
-	if (*end != 'x')
+	if (*end != 'x') {
+		media_dbg(media, "Expected 'x'\n");
 		return -EINVAL;
+	}
 
 	p = end + 1;
 	height = strtoul(p, &end, 10);
@@ -264,29 +269,40 @@ static int v4l2_subdev_parse_format(struct v4l2_mbus_framefmt *format,
 	return 0;
 }
 
-static int v4l2_subdev_parse_rectangle(
-	struct v4l2_rect *r, const char *p, char **endp)
+static int v4l2_subdev_parse_rectangle(struct media_device *media,
+				       struct v4l2_rect *r, const char *p,
+				       char **endp)
 {
 	char *end;
 
-	if (*p++ != '(')
+	if (*p++ != '(') {
+		media_dbg(media, "Expected '('\n");
 		return -EINVAL;
+	}
 
 	r->left = strtoul(p, &end, 10);
-	if (*end != ',')
+	if (*end != ',') {
+		media_dbg(media, "Expected ','\n");
 		return -EINVAL;
+	}
 
 	p = end + 1;
 	r->top = strtoul(p, &end, 10);
-	if (*end++ != ')')
+	if (*end++ != ')') {
+		media_dbg(media, "Expected ')'\n");
 		return -EINVAL;
-	if (*end != '/')
+	}
+	if (*end != '/') {
+		media_dbg(media, "Expected '/'\n");
 		return -EINVAL;
+	}
 
 	p = end + 1;
 	r->width = strtoul(p, &end, 10);
-	if (*end != 'x')
+	if (*end != 'x') {
+		media_dbg(media, "Expected 'x'\n");
 		return -EINVAL;
+	}
 
 	p = end + 1;
 	r->height = strtoul(p, &end, 10);
@@ -295,7 +311,8 @@ static int v4l2_subdev_parse_rectangle(
 	return 0;
 }
 
-static int v4l2_subdev_parse_frame_interval(struct v4l2_fract *interval,
+static int v4l2_subdev_parse_frame_interval(struct media_device *media,
+					    struct v4l2_fract *interval,
 					    const char *p, char **endp)
 {
 	char *end;
@@ -305,8 +322,10 @@ static int v4l2_subdev_parse_frame_interval(struct v4l2_fract *interval,
 	interval->numerator = strtoul(p, &end, 10);
 
 	for (p = end; isspace(*p); ++p);
-	if (*p++ != '/')
+	if (*p++ != '/') {
+		media_dbg(media, "Expected '/'\n");
 		return -EINVAL;
+	}
 
 	for (; isspace(*p); ++p);
 	interval->denominator = strtoul(p, &end, 10);
@@ -348,8 +367,10 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 		return NULL;
 
 	for (p = end; isspace(*p); ++p);
-	if (*p++ != '[')
+	if (*p++ != '[') {
+		media_dbg(media, "Expected '['\n");
 		return NULL;
+	}
 
 	for (first = true; ; first = false) {
 		for (; isspace(*p); p++);
@@ -401,8 +422,10 @@ static struct media_pad *v4l2_subdev_parse_pad_format(
 		break;
 	}
 
-	if (*p != ']')
+	if (*p != ']') {
+		media_dbg(media, "Expected ']'\n");
 		return NULL;
+	}
 
 	*endp = (char *)p + 1;
 	return pad;
