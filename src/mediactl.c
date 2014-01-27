@@ -111,9 +111,38 @@ unsigned int media_get_entities_count(struct media_device *media)
 	return media->entities_count;
 }
 
-struct media_entity *media_get_entities(struct media_device *media)
+struct media_entity *media_get_entity(struct media_device *media, unsigned int index)
 {
-	return media->entities;
+	if (index >= media->entities_count)
+		return NULL;
+
+	return &media->entities[index];
+}
+
+const struct media_pad *media_entity_get_pad(struct media_entity *entity, unsigned int index)
+{
+	if (index >= entity->info.pads)
+		return NULL;
+
+	return &entity->pads[index];
+}
+
+unsigned int media_entity_get_links_count(struct media_entity *entity)
+{
+	return entity->num_links;
+}
+
+const struct media_link *media_entity_get_link(struct media_entity *entity, unsigned int index)
+{
+	if (index >= entity->num_links)
+		return NULL;
+
+	return &entity->links[index];
+}
+
+const char *media_entity_get_devname(struct media_entity *entity)
+{
+	return entity->devname[0] ? entity->devname : NULL;
 }
 
 const struct media_device_info *media_get_info(struct media_device *media)
@@ -124,6 +153,11 @@ const struct media_device_info *media_get_info(struct media_device *media)
 const char *media_get_devnode(struct media_device *media)
 {
 	return media->devnode;
+}
+
+const struct media_entity_desc *media_entity_get_info(struct media_entity *entity)
+{
+	return &entity->info;
 }
 
 /* -----------------------------------------------------------------------------

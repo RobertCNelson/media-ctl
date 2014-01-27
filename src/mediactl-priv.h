@@ -26,6 +26,18 @@
 
 #include "mediactl.h"
 
+struct media_entity {
+	struct media_device *media;
+	struct media_entity_desc info;
+	struct media_pad *pads;
+	struct media_link *links;
+	unsigned int max_links;
+	unsigned int num_links;
+
+	char devname[32];
+	int fd;
+};
+
 struct media_device {
 	int fd;
 	int refcount;

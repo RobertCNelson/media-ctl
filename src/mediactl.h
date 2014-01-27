@@ -39,20 +39,8 @@ struct media_pad {
 	__u32 padding[3];
 };
 
-struct media_entity {
-	struct media_device *media;
-	struct media_entity_desc info;
-	struct media_pad *pads;
-	struct media_link *links;
-	unsigned int max_links;
-	unsigned int num_links;
-
-	char devname[32];
-	int fd;
-	__u32 padding[6];
-};
-
 struct media_device;
+struct media_entity;
 
 /**
  * @brief Create a new media device.
@@ -131,6 +119,66 @@ int media_device_enumerate(struct media_device *media);
 struct media_pad *media_entity_remote_source(struct media_pad *pad);
 
 /**
+ * @brief Get information about a media entity
+ * @param entity - media entity.
+ *
+ * The information structure is owned by the media entity object and will be
+ * freed when the object is destroyed.
+ *
+ * @return A pointer to the media entity information
+ */
+const struct media_entity_desc *media_entity_get_info(struct media_entity *entity);
+
+/**
+ * @brief Get an entity pad
+ * @param entity - media entity.
+ * @param index - pad index.
+ *
+ * This function returns a pointer to the pad object identified by its index
+ * for the given entity. If the pad index is out of bounds it will return NULL.
+ *
+ * @return A pointer to the pad
+ */
+const struct media_pad *media_entity_get_pad(struct media_entity *entity,
+					     unsigned int index);
+
+/**
+ * @brief Get the number of links
+ * @param entity - media entity.
+ *
+ * This function returns the total number of links that originate from or arrive
+ * at the the media entity.
+ *
+ * @return The number of links for the entity
+ */
+unsigned int media_entity_get_links_count(struct media_entity *entity);
+
+/**
+ * @brief Get an entity link
+ * @param entity - media entity.
+ * @param index - link index.
+ *
+ * This function returns a pointer to the link object identified by its index
+ * for the given entity. If the link index is out of bounds it will return NULL.
+ *
+ * @return A pointer to the link
+ */
+const struct media_link *media_entity_get_link(struct media_entity *entity,
+					       unsigned int index);
+
+/**
+ * @brief Get the device node name for an entity
+ * @param entity - media entity.
+ *
+ * This function returns the full path and name to the device node corresponding
+ * to the given entity.
+ *
+ * @return A pointer to the device node name or NULL if the entity has no
+ * associated device node
+ */
+const char *media_entity_get_devname(struct media_entity *entity);
+
+/**
  * @brief Get the type of an entity.
  * @param entity - the entity.
  *
@@ -138,7 +186,7 @@ struct media_pad *media_entity_remote_source(struct media_pad *pad);
  */
 static inline unsigned int media_entity_type(struct media_entity *entity)
 {
-	return entity->info.type & MEDIA_ENT_TYPE_MASK;
+	return media_entity_get_info(entity)->type & MEDIA_ENT_TYPE_MASK;
 }
 
 /**
@@ -193,7 +241,7 @@ unsigned int media_get_entities_count(struct media_device *media);
  *
  * @return A pointer to an array of entities
  */
-struct media_entity *media_get_entities(struct media_device *media);
+struct media_entity *media_get_entity(struct media_device *media, unsigned int index);
 
 /**
  * @brief Get the media device information
