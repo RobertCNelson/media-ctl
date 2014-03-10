@@ -45,10 +45,11 @@ int v4l2_subdev_open(struct media_entity *entity)
 
 	entity->fd = open(entity->devname, O_RDWR);
 	if (entity->fd == -1) {
+		int ret = -errno;
 		media_dbg(entity->media,
 			  "%s: Failed to open subdev device node %s\n", __func__,
 			  entity->devname);
-		return -errno;
+		return ret;
 	}
 
 	return 0;

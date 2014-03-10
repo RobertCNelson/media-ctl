@@ -140,9 +140,10 @@ int media_setup_link(struct media_device *media,
 
 	ret = ioctl(media->fd, MEDIA_IOC_SETUP_LINK, &ulink);
 	if (ret == -1) {
+		ret = -errno;
 		media_dbg(media, "%s: Unable to setup link (%s)\n",
 			  __func__, strerror(errno));
-		return -errno;
+		return ret;
 	}
 
 	link->flags = ulink.flags;
@@ -211,12 +212,13 @@ static int media_enum_links(struct media_device *media)
 		links.links = calloc(entity->info.links, sizeof(struct media_link_desc));
 
 		if (ioctl(media->fd, MEDIA_IOC_ENUM_LINKS, &links) < 0) {
+			ret = -errno;
 			media_dbg(media,
 				  "%s: Unable to enumerate pads and links (%s).\n",
 				  __func__, strerror(errno));
 			free(links.pads);
 			free(links.links);
-			return -errno;
+			return ret;
 		}
 
 		for (i = 0; i < entity->info.pads; ++i) {
