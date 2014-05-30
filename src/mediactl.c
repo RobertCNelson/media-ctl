@@ -640,7 +640,6 @@ void media_debug_set_handler(struct media_device *media,
 static struct media_device *__media_device_new(void)
 {
 	struct media_device *media;
-	int ret;
 
 	media = calloc(1, sizeof(*media));
 	if (media == NULL)
@@ -657,7 +656,6 @@ static struct media_device *__media_device_new(void)
 struct media_device *media_device_new(const char *devnode)
 {
 	struct media_device *media;
-	int ret;
 
 	media = __media_device_new();
 	if (media == NULL)
