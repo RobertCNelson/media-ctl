@@ -717,7 +717,7 @@ int media_device_add_entity(struct media_device *media,
 			    const struct media_entity_desc *desc,
 			    const char *devnode)
 {
-	struct media_entity **defent;
+	struct media_entity **defent = NULL;
 	struct media_entity *entity;
 	unsigned int size;
 
@@ -763,7 +763,8 @@ int media_device_add_entity(struct media_device *media,
 
 	if (desc->flags & MEDIA_ENT_FL_DEFAULT) {
 		entity->info.flags |= MEDIA_ENT_FL_DEFAULT;
-		*defent = entity;
+		if (defent)
+			*defent = entity;
 	}
 
 	return 0;
