@@ -158,6 +158,8 @@ struct media_entity *media_get_default_entity(struct media_device *media,
 	case MEDIA_ENT_T_DEVNODE_DVB:
 		return media->def.dvb;
 	}
+
+	return NULL;
 }
 
 const struct media_device_info *media_get_info(struct media_device *media)
