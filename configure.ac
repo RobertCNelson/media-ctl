@@ -7,6 +7,21 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
+AC_MSG_ERROR([
+    --------------------------------------------------------------------
+    The media-ctl utility and libraries have been moved to the v4l-utils
+    package available at
+    
+        git://linuxtv.org/v4l-utils.git
+    
+    My v4l-utils development tree can be found at
+    
+        git://linuxtv.org/pinchartl/v4l-utils.git
+    
+    This git tree is deprecated and will not be updated.
+    --------------------------------------------------------------------
+])
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
